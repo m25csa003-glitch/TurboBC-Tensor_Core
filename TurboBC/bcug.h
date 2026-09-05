@@ -77,6 +77,13 @@ int  bc_gpu_ug_csc_wa (int *I_h,int *CP_h,int *S_h,float *sigma_h,float *bc_h,
 int  bc_gpu_ug_cooc_sc (int *I_h,int *J_h,int *S_h,float *sigma_h,float *bc_h,
 		       int nr,int rs,int nz,int n,int repetition);
 
+/*
+ * tensor-core BC: runs 16 roots at a time so the BFS step f <- A'f becomes
+ * the matrix-matrix product F <- A'F that a tensor core can execute.
+ */
+int  bc_gpu_ug_tc (int *I_h,int *CP_h,int *S_h,float *sigma_h,float *bc_h,
+                   int nr,int rs,int nz,int n,int repetition);
+
 
 /******************************************************************************/
 /* 

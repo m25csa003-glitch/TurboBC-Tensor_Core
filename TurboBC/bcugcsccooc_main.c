@@ -38,7 +38,7 @@
 *   --w is an integer equal to 1 if there is a weighted graph, and 0 otherwise,
 *   --ug is an integer equal to 1 if there is an undirected graph (matrix A is symmetric),
 *   and equal to 0 otherwise,
-*   --format: integer equal to: 0 (CSC_sc), 1 (CSC_wa), 2 (COOC_sc)
+*   --format: integer equal to: 0 (CSC_sc), 1 (CSC_wa), 2 (COOC_sc), 3 (tensor core)
 *   --p: integer equal to 1 to print results, 0 otherwise,
 *   --nr: number root vertices to compute the BC (also source vertex)
 *   --rs: if nr =1, rs is the root vertex.
@@ -312,6 +312,16 @@ int main(int argc, char *argv[]){
 	  printf("\ncheck values of S_hgpu: ");
 	  S_check(S,S_hgpu,N);
 	  printf("\ncheck bc in COOC(sc) format: ");
+	  bc_check(bc,bc_hgpu,N);
+      }
+    }else if (format == 3){ // tensor core
+      bc_gpu_ug_tc (CscA.IC,CscA.CP,S_hgpu,sigma_hgpu,bc_hgpu,nr,rs,nz,N,repet);
+      if (seq){
+	  printf("\ncheck sigma in TC format: ");
+	  bfs_check(sigma,sigma_hgpu,N);
+	  printf("\ncheck values of S_hgpu: ");
+	  S_check(S,S_hgpu,N);
+	  printf("\ncheck bc in TC format: ");
 	  bc_check(bc,bc_hgpu,N);
       }
     }

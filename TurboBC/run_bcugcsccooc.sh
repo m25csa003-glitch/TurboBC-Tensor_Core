@@ -1,5 +1,6 @@
+#!/usr/bin/env bash
 TEST="1"
-DATA="/disk/raptor-2/oarti001/documents/MMdataFiles"
+DATA="/home/akshat/TurboBC/graphData"
 
 for file in mycielskian4 
 do

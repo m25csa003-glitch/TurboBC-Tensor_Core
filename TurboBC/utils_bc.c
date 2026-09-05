@@ -59,45 +59,18 @@ int printBC(int *I,int *J,int *ICOOC,int *JCOOC,int *S,int *S_hgpu,float *sigma,
 	}*/
 
     printf("\nS   S_hgpu \n");
-    if (n > m1){
-	for (i=0; i<m1; i++){
-	  printf("%d,%d,%d\n",i,S[i],S_hgpu[i]);
-	}
-	for (i=n-m1; i<n; i++){
-	  printf("%d,%d,%d\n",i,S[i],S_hgpu[i]);
-	}
-    }else{
-	for (i=0; i<n; i++){
-	  printf("%d,%d,%d\n", i,S[i],S_hgpu[i]);
-	}
+    for (i=0; i<n; i++){
+	printf("%d,%d,%d\n",i,S[i],S_hgpu[i]);
     }
     
     printf("\nsigma   sigma_hgpu \n");
-    if (n > m1){
-	for (i=0; i<m1; i++){
-	  printf("%d,%lf,%lf\n",i,sigma[i],sigma_hgpu[i]);
-	}
-	for (i=n-m1; i<n; i++){
-	  printf("%d,%lf,%lf\n",i,sigma[i],sigma_hgpu[i]);
-	}
-    }else{
-	for (i=0; i<n; i++){
-	  printf("%d,%lf,%lf\n",i,sigma[i],sigma_hgpu[i]);
-	}
+    for (i=0; i<n; i++){
+	printf("%d,%lf,%lf\n",i,sigma[i],sigma_hgpu[i]);
     }
 
     printf("\nbc   bc_hgpu \n");
-    if (n > m1){
-	for (i=0; i<m1; i++){
-	  printf("%d,%lf,%lf\n",i,bc[i],bc_hgpu[i]);
-	}
-	for (i=n-m1; i<n; i++){
-	  printf("%d,%lf,%lf\n",i,bc[i],bc_hgpu[i]);
-	}
-    }else{
-	for (i=0; i<n; i++){
-	  printf("%d,%lf,%lf\n",i,bc[i],bc_hgpu[i]);
-	}
+    for (i=0; i<n; i++){
+	printf("%d,%lf,%lf\n",i,bc[i],bc_hgpu[i]);
     }
     
     return 0;
