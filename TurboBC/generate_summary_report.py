@@ -3,7 +3,8 @@ import re
 import sys
 import os
 
-LOG_FILE = sys.argv[1] if len(sys.argv) > 1 else "/home/akshat/TurboBC/TurboBC/bc_verification_results.log"
+HERE = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "bc_verification_results.log")
 
 if not os.path.exists(LOG_FILE):
     print(f"Error: Log file {LOG_FILE} not found.")
@@ -18,7 +19,7 @@ graph_data = {}
 # Accurate Graph Categorization based on mathematical Coefficient of Variation & Topology
 # fb_new_sites (CV 1.56), fb_artist (CV 1.96) and epinions (CV 5.02) are all
 # power-law social networks.  epinions is by far the most skewed -- max degree
-# 3035 against a mean of 6.71 -- and is the only graph where scCSC loses.
+# 3035 against a mean of 6.71 -- and the clearest case of scCSC losing to scCOOC.
 IRREGULAR_GRAPHS = {"ASIC_100ks", "Tina_AskCal", "Ragusa18", "congress",
                     "fb_new_sites", "fb_artist", "epinions"}
 REGULAR_GRAPHS = {"smallworld", "mycielskian4", "cage4", "nd3k", "nd6k"}

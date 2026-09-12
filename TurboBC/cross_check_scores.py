@@ -4,10 +4,11 @@ import os
 import re
 import json
 
-LOG_FILE = "/home/akshat/TurboBC/TurboBC/bc_verification_results.log"
-CPU_BASELINE_FILE = "/home/akshat/TurboBC/TurboBC/cpu_baseline_scores.txt"
-JSON_BASELINE_FILE = "/home/akshat/TurboBC/TurboBC/cpu_baseline_scores.json"
-AUDIT_REPORT_FILE = "/home/akshat/TurboBC/TurboBC/gpu_vs_cpu_audit_report.txt"
+HERE = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE = os.path.join(HERE, "bc_verification_results.log")
+CPU_BASELINE_FILE = os.path.join(HERE, "cpu_baseline_scores.txt")
+JSON_BASELINE_FILE = os.path.join(HERE, "cpu_baseline_scores.json")
+AUDIT_REPORT_FILE = os.path.join(HERE, "gpu_vs_cpu_audit_report.txt")
 
 if not os.path.exists(LOG_FILE):
     print(f"Error: {LOG_FILE} not found. Please run ./run_all_experiments.sh first.")

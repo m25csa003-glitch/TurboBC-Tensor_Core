@@ -2,7 +2,8 @@
 # BC on the congress graph (475 vertices, 13289 directed weighted edges).
 # The graph is directed and asymmetric, so --ug 0; the .mtx carries a value
 # column, so --w 1.
-DATA="/home/akshat/TurboBC/graphData"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DATA="$HERE/../graphData"
 NR=475          # number of root vertices; 475 = every vertex = full BC
 REPET=1
 

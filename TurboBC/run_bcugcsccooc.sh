@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 TEST="1"
-DATA="/home/akshat/TurboBC/graphData"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DATA="$HERE/../graphData"
 
 for file in mycielskian4 
 do

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-DATA="/home/akshat/TurboBC/graphData"
-LOGFILE="/home/akshat/TurboBC/TurboBC/bc_verification_results.log"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DATA="$HERE/../graphData"
+LOGFILE="$HERE/bc_verification_results.log"
 
 rm -f "$LOGFILE"
 echo "=================================================================================" >> "$LOGFILE"
@@ -126,7 +127,7 @@ echo "All 48 tests completed! Complete vertex logs saved to: $LOGFILE"
 echo "================================================================================="
 
 # Step 1: Extract CPU Baseline & Cross-Check GPU Scores
-python3 /home/akshat/TurboBC/TurboBC/cross_check_scores.py
+python3 "$HERE/cross_check_scores.py"
 
 # Step 2: Display Benchmark and Speedup Summary Report
-python3 /home/akshat/TurboBC/TurboBC/generate_summary_report.py "$LOGFILE"
+python3 "$HERE/generate_summary_report.py" "$LOGFILE"
