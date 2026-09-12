@@ -42,6 +42,9 @@ for block in blocks[1:]:
         category = "Irregular" if graph_name in IRREGULAR_GRAPHS else "Regular"
         graph_data[graph_name] = {
             "category": category,
+            "nodes": 0,
+            "edges": 0,
+            "density": None,
             "cpu_ms": 0.0,
             "scCSC_ms": None,
             "scCOOC_ms": None,
@@ -49,6 +52,18 @@ for block in blocks[1:]:
             "tcTF32_ms": None,
             "verified": True
         }
+
+    # Matrix size, printed by bcugcsccooc_main.c as "N = 100000,M = 100000, nz = 999996".
+    # nz is the count the kernels actually traverse: for --ug 1 the reader has already
+    # doubled it, so this is the true nonzero count of the symmetric matrix.
+    size_match = re.search(r'N = (\d+),\s*M = \d+,\s*nz = (\d+)', block)
+    if size_match:
+        n_nodes = int(size_match.group(1))
+        n_edges = int(size_match.group(2))
+        graph_data[graph_name]["nodes"] = n_nodes
+        graph_data[graph_name]["edges"] = n_edges
+        if n_nodes > 0:
+            graph_data[graph_name]["density"] = 100.0 * n_edges / (float(n_nodes) * n_nodes)
 
     # Extract sequential CPU time in seconds -> convert to ms
     seq_match = re.search(r'bfs_seq_ug_csc::total BC time/vertex = ([0-9.]+)s', block)
@@ -128,12 +143,12 @@ for block in blocks[1:]:
         graph_data[graph_name]["verified"] = False
 
 # Print Report
-print("\n" + "="*112)
+print("\n" + "="*140)
 print("                       TURBOBC FINAL VERIFICATION & BENCHMARK REPORT                        ")
 print("               System: NVIDIA L4 GPU | CPU & GPU Betweenness Centrality Check               ")
-print("="*112)
-print(f"{'Graph Name':<14} | {'Category':<9} | {'CPU (ms)':<9} | {'scCSC':<9} | {'scCOOC':<9} | {'vcCSC':<9} | {'tcTF32':<9} | {'Fastest':<8} | {'Max Speedup':<11} | {'Status'}")
-print("-" * 112)
+print("="*140)
+print(f"{'Graph Name':<14} | {'Category':<9} | {'Density':>9} | {'CPU (ms)':<9} | {'scCSC':<9} | {'scCOOC':<9} | {'vcCSC':<9} | {'tcTF32':<9} | {'Fastest':<8} | {'vs CPU':<9} | {'vs CUDA':<8} | {'Status'}")
+print("-" * 140)
 
 for graph, d in graph_data.items():
     cpu = d["cpu_ms"]
@@ -158,12 +173,31 @@ for graph, d in graph_data.items():
         fastest_name = "N/A"
         speedup_str = "N/A"
         
+    # Gain against the BEST of the three CUDA-core kernels -- the comparison the
+    # tensor-core claim actually rests on. "Max Speedup" above is only vs the CPU.
+    cuda_times = [t for t in (s_csc, s_cooc, v_csc) if t > 0]
+    if cuda_times and t_tc > 0:
+        d["gpu_gain"] = min(cuda_times) / t_tc
+        gain_str = f"{d['gpu_gain']:.2f}x"
+    else:
+        d["gpu_gain"] = None
+        gain_str = "n/a"
+
     status = "✅ 100% MATCH" if d["verified"] else "❌ MISMATCH"
     
-    print(f"{graph:<14} | {d['category']:<9} | {cpu:<9.3f} | {s_csc:<9.4f} | {s_cooc:<9.4f} | {v_csc:<9.4f} | {t_tc:<9.4f} | {fastest_name:<8} | {speedup_str:<11} | {status}")
+    dens = f"{d['density']:.4f}%" if d['density'] is not None else "n/a"
+    print(f"{graph:<14} | {d['category']:<9} | {dens:>9} | {cpu:<9.3f} | {s_csc:<9.4f} | {s_cooc:<9.4f} | {v_csc:<9.4f} | {t_tc:<9.4f} | {fastest_name:<8} | {speedup_str:<9} | {gain_str:<8} | {status}")
 
-print("-" * 112)
+print("-" * 140)
 print("Notes & Deep Engineering Insights:")
+_dens = sorted(((g, _d["density"]) for g, _d in graph_data.items() if _d.get("density")), key=lambda x: x[1])
+print(" \u2022 HOW TO READ THE DENSITY COLUMN: it is nonzeros / N^2, i.e. what fraction of the full adjacency")
+print("      matrix actually holds an edge. LOWER = SPARSER. 0.0059% means only about 1 cell in 17,000 is")
+print("      filled; 60% means the matrix is more than half full. Sparsest first:")
+for _i in range(0, len(_dens), 3):
+    print("        " + "".join(f"{_g:<15}{_v:>8.4f}%  (1 in {int(round(100.0/_v)):>6,})   " for _g, _v in _dens[_i:_i+3]))
+print("      Graphs run with --ug 1 (mycielskian4, smallworld) are symmetrized by the reader, so nz is")
+print("      doubled: these percentages are for the symmetric matrix the kernels actually traverse.")
 print(" • Status '✅ 100% MATCH': Confirms CPU sequential BC scores & GPU parallel BC scores are mathematically identical.")
 print("      Checked at 1e-4 RELATIVE tolerance. utils_bc.c uses absolute tolerances (1e-5 on sigma, 0.05 on bc) that")
 print("      do not scale: nd6k reaches a shortest-path count of 7.1e7, past fp32's exact-integer limit of 2^24, so")
@@ -173,13 +207,18 @@ print(" • Regular Graphs (smallworld, cage4, mycielskian4, nd3k, nd6k): Unifor
 print("      nd3k/nd6k are 3D FEM meshes: CV 0.26/0.23, mean degree 364/383 -- the most uniform and by far the densest graphs here.")
 print(" • Irregular Graphs (ASIC_100ks, Tina_AskCal, Ragusa18, congress, fb_new_sites, fb_artist, epinions): Skewed degree distribution (high coefficient of variation).")
 print("      CV: fb_new_sites 1.56, fb_artist 1.96, epinions 5.02 (max degree 3035 vs mean 6.71).")
-print(" • epinions is the only graph where scCSC LOSES. Its hubs are large enough that one thread per vertex")
+_lost = [g for g, _d in graph_data.items()
+         if (_d.get("scCSC_ms") or 0) > 0
+         and min([t for t in ((_d.get("scCOOC_ms") or 0), (_d.get("vcCSC_ms") or 0)) if t > 0] or [9e9]) < _d["scCSC_ms"]]
+print(f" • scCSC is NOT the best CUDA-core kernel on: {', '.join(_lost) if _lost else '(none)'}.")
+print("      epinions is the clearest case: its hubs are large enough that one thread per vertex")
 print("      stalls an entire 32-lane warp; scCOOC launches over non-zeros (dimGridspmv = (nz+1024)/1024, one")
 print("      thread per EDGE), so the load imbalance disappears entirely -- the exact case the paper predicts.")
 print(" \u2022 tcTF32 = TENSOR CORE implementation (bcgputc.cu). Tensor cores multiply MATRICES, not vectors, so this")
 print("      variant runs 16 roots at once: f <- A'f becomes F <- A'F, an SpMM whose N dimension is exactly the 16")
 print("      of the m16n16k8 tf32 WMMA shape. A' is stored sparse and scattered into shared memory just before")
-print("      each MMA, so memory traffic stays proportional to nz. It is now the fastest kernel on 11 of 12 graphs.")
+_won = sum(1 for _d in graph_data.values() if _d.get("gpu_gain") and _d["gpu_gain"] > 1.0)
+print(f"      each MMA, so memory traffic stays proportional to nz. It is the fastest kernel on {_won} of {len(graph_data)} graphs here.")
 print(" \u2022 PRECISION: fp16 is unusable here -- exact integers stop at 2048 but path counts reach 24973 (fb_artist),")
 print("      and sigma would overflow its 65504 maximum on some graphs. tf32 fixes the range but keeps an 11-bit")
 print("      mantissa, so each F tile is split as F = F1+F2+F3 (3 MMAs, 33 mantissa bits > fp32's 24). Measured on")
@@ -194,15 +233,17 @@ print("      a nonzero, so density is bounded below by 6.25% by construction. Me
 print("         fb_artist 0.437% -> 6.301%   epinions 0.823% -> 7.116%   smallworld 1.789% -> 15.374%")
 print("         nd3k 43.6% -> 60.6%          nd6k 42.3% -> 59.6%")
 print("      The gather also becomes a 64-byte coalesced load per slot instead of a strided read of a mostly")
-print("      empty tile. This alone turned a 4.2x LOSS on fb_artist into a 2.4x win.")
+print("      empty tile. Before this change fb_artist ran 4.2x SLOWER than scCSC; see the vs CUDA column")
+print("      above for where it lands now.")
 print(" \u2022 BATCH OCCUPANCY: tcTF32 always computes a full 16-root batch, so benchmarking it at nr=1 charges it")
 print("      for 16 roots and credits it with one -- an artificial 15/16 penalty. Every non-toy graph above")
 print("      therefore runs nr=32. The CUDA-core kernels are single-source and their per-root cost does not")
 print("      depend on nr, so this changes only the tensor-core measurement, and only by removing a wrong one.")
 print("      On smallworld the same binary reports 9.26 ms/vertex at nr=1 and 0.63 ms/vertex at nr=16.")
 print(" \u2022 SPEEDUP vs THE BEST CUDA-CORE KERNEL (not just vs scCSC), measured at nr=32:")
-print("         smallworld 4.39x   ASIC_100ks 3.35x   congress 3.02x   fb_new_sites 2.50x")
-print("         fb_artist  2.23x   epinions   1.67x   nd3k       1.85x   nd6k         2.38x")
+_gains = [(g, _d["gpu_gain"]) for g, _d in graph_data.items() if _d.get("gpu_gain")]
+for _i in range(0, len(_gains), 4):
+    print("        " + "".join(f"{_g:<15}{_v:>5.2f}x   " for _g, _v in _gains[_i:_i+4]))
 print("      The win no longer depends on the graph being dense: it holds across FEM meshes, circuit matrices,")
 print("      small-world lattices and scale-free social networks. The earlier ~3% density break-even was a")
 print("      property of the geometric tiling, not of tensor cores, and the condensed layout removes it.")

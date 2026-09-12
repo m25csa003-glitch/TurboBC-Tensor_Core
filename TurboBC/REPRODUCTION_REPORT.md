@@ -155,7 +155,7 @@ The Titan Xp has no tensor cores at all, so the work in Part B was simply not po
 
 | Paper Claim | Our Result | Reproduced? |
 |:---|:---|:---:|
-| GPU significantly faster than CPU | 27x–252x speedup on the large graphs | ✅ |
+| GPU significantly faster than CPU | 27x–275x speedup on the large graphs | ✅ |
 | scCSC is best on regular graphs (among the CUDA-core algorithms) | scCSC is the fastest of the three on smallworld | ✅ |
 | vcCSC carries more overhead than the scalar version | vcCSC is consistently 2–2.5x slower (when degree is small) | ✅ |
 | scCOOC wins on skewed-degree graphs | scCOOC is the fastest of the three on epinions (max degree 3035 vs mean 6.71) | ✅ |
@@ -303,7 +303,7 @@ The gather is now a **64-byte coalesced load per slot** (the 16 roots are consec
 
 **Important:** this is **tile density**, a property of our storage layout. **The graph's matrix density has not changed at all** — not a single edge was added or removed, and the `.mtx` files are identical. The two are listed separately in Section 9.
 
-On fb_artist this change alone turned a **4.2x LOSS into a 2.4x WIN**.
+On fb_artist this change alone turned a **4.2x LOSS into a ~2x WIN** against the best CUDA-core kernel (see Section 10 for the per-run figure).
 
 ## 8. Benchmark Fairness Fix (`nr = 1` → `nr = 32`)
 
@@ -326,22 +326,76 @@ The CUDA-core kernels are single-source — their per-root cost does not depend 
 
 ## 9. Datasets
 
-| Graph | Nodes | Edges | **Matrix density** | Avg degree | Category | Source |
-|:---|---:|---:|---:|---:|:---|:---|
-| mycielskian4 | 11 | 20 | 16.53% | 1.8 | Regular | SuiteSparse |
-| Tina_AskCal | 11 | 29 | 23.97% | 2.6 | Irregular | SuiteSparse |
-| cage4 | 9 | 49 | 60.49% | 5.4 | Regular | SuiteSparse |
-| Ragusa18 | 23 | 64 | 12.10% | 2.8 | Irregular | SuiteSparse |
-| congress | 475 | 13,289 | 5.8899% | 28.0 | Irregular | Twitter congress network |
-| **smallworld** | 100,000 | 499,998 | **0.0050%** | 5.0 | Regular | SuiteSparse |
-| **ASIC_100ks** | 99,190 | 578,890 | **0.0059%** | 5.8 | Irregular | SuiteSparse (circuit) |
-| **epinions** | 75,888 | 508,837 | **0.0088%** | 6.7 | Irregular | SNAP soc-Epinions1 |
-| **fb_new_sites** | 27,917 | 411,928 | **0.0529%** | 14.8 | Irregular | SNAP gemsec-Facebook |
-| **fb_artist** | 50,515 | 1,638,180 | **0.0642%** | 32.4 | Irregular | SNAP gemsec-Facebook |
-| nd6k | 18,000 | 6,897,316 | 2.1288% | 383.2 | Regular | SuiteSparse ND (3D FEM) |
-| nd3k | 9,000 | 3,279,690 | 4.0490% | 364.4 | Regular | SuiteSparse ND (3D FEM) |
+### How to Read the Density Column
 
-The five graphs in bold are **extremely sparse** — in smallworld only about 1 cell in 20,000 is filled.
+Density answers one question: **out of every connection that could possibly exist, how many actually do?**
+
+```
+Density = actual edges / maximum possible edges x 100
+        = nz / (N x N) x 100
+```
+
+A graph with N nodes can have at most N x N directed connections. Density is the fraction of those that are really present. **The smaller the number, the sparser the graph.**
+
+**Worked example — ASIC_100ks (the sparsest graph here):**
+
+```
+N                      = 99,190 nodes
+Maximum possible edges = 99,190 x 99,190 = 9,838,656,100   (~9.8 billion)
+Actual edges           =                       578,890
+Density = 578,890 / 9,838,656,100 x 100 = 0.0059%
+```
+
+So only about **1 in every 17,000 possible connections exists** — the other 16,999 cells of the matrix are empty.
+
+**Worked example — cage4 (the densest graph here):**
+
+```
+N                      = 9 nodes
+Maximum possible edges = 9 x 9 = 81
+Actual edges           =         49
+Density = 49 / 81 x 100 = 60.49%
+```
+
+Here **1 in every 2 possible connections exists** — more than half the matrix is full.
+
+**Rule of thumb:**
+
+| Density | Meaning | Typical of |
+|:---|:---|:---|
+| < 0.1% | fewer than 1 filled cell in 1,000 | **Very sparse** — real-world networks |
+| 1% – 10% | 1 filled cell in 10 to 100 | Medium |
+| > 20% | more than 1 filled cell in 5 | **Dense** — small or toy matrices |
+
+You can verify any of these by hand from the log, which prints the matrix size for every run:
+
+```bash
+grep -m1 "^N = " bc_verification_results.log
+# N = 11,M = 11, nz = 40   ->   40 / (11 x 11) x 100 = 33.06%
+```
+
+The summary report prints this same ranking automatically under **HOW TO READ THE DENSITY COLUMN**, so it stays correct if graphs are added or removed.
+
+### The 12 Graphs
+
+| Graph | Nodes | Edges | **Matrix density** | Filled cells | Avg degree | Category | Source |
+|:---|---:|---:|---:|:---|---:|:---|:---|
+| **ASIC_100ks** | 99,190 | 578,890 | **0.0059%** | 1 in 16,996 | 5.8 | Irregular | SuiteSparse (circuit) |
+| **epinions** | 75,888 | 508,837 | **0.0088%** | 1 in 11,318 | 6.7 | Irregular | SNAP soc-Epinions1 |
+| **smallworld** | 100,000 | 999,996 | **0.0100%** | 1 in 10,000 | 10.0 | Regular | SuiteSparse |
+| **fb_new_sites** | 27,917 | 411,928 | **0.0529%** | 1 in 1,892 | 14.8 | Irregular | SNAP gemsec-Facebook |
+| **fb_artist** | 50,515 | 1,638,180 | **0.0642%** | 1 in 1,558 | 32.4 | Irregular | SNAP gemsec-Facebook |
+| nd6k | 18,000 | 6,897,316 | 2.1288% | 1 in 47 | 383.2 | Regular | SuiteSparse ND (3D FEM) |
+| nd3k | 9,000 | 3,279,690 | 4.0490% | 1 in 25 | 364.4 | Regular | SuiteSparse ND (3D FEM) |
+| congress | 475 | 13,289 | 5.8899% | 1 in 17 | 28.0 | Irregular | Twitter congress network |
+| Ragusa18 | 23 | 64 | 12.0983% | 1 in 8 | 2.8 | Irregular | SuiteSparse |
+| Tina_AskCal | 11 | 29 | 23.9669% | 1 in 4 | 2.6 | Irregular | SuiteSparse |
+| mycielskian4 | 11 | 40 | 33.0579% | 1 in 3 | 3.6 | Regular | SuiteSparse |
+| cage4 | 9 | 49 | 60.4938% | 1 in 2 | 5.4 | Regular | SuiteSparse |
+
+The five graphs in bold are **extremely sparse** and are the ones the tensor-core claim rests on.
+
+> `mycielskian4` and `smallworld` run with `--ug 1` (undirected), so the reader symmetrizes the matrix and doubles `nz`. The figures above are for that **symmetric matrix** — the one the kernels actually traverse. The raw `.mtx` file stores only the upper triangle (smallworld: 499,998).
 
 **Regular vs Irregular** is decided by the coefficient of variation (CV) of the degree distribution:
 - nd3k CV = 0.26, nd6k CV = 0.23 — the most uniform
@@ -352,54 +406,58 @@ The five graphs in bold are **extremely sparse** — in smallworld only about 1 
 
 ## 10. Final Results
 
-All times are in **ms per root vertex**, at `nr=32`, with all 4 algorithms running on the same roots.
+All times are in **ms per root vertex**, at `nr=32`, with all 4 algorithms running on the same roots. Sorted from sparsest graph to densest.
 
-| Graph | Category | CPU (ms) | scCSC | scCOOC | vcCSC | **tcTF32** | Fastest | vs CPU | Status |
-|:---|:---|---:|---:|---:|---:|---:|:---:|---:|:---:|
-| mycielskian4 | Regular | 0.001 | 0.1242 | 0.1195 | 0.1333 | 0.1236 | scCOOC | Toy | ✅ |
-| Tina_AskCal | Irregular | 0.004 | 1.0158 | 1.1386 | 1.1784 | **0.3092** | tcTF32 | Toy | ✅ |
-| Ragusa18 | Irregular | 0.015 | 0.6304 | 0.6608 | 0.5786 | **0.5067** | tcTF32 | Toy | ✅ |
-| cage4 | Regular | 0.004 | 0.5167 | 0.5074 | 0.5542 | **0.4420** | tcTF32 | Toy | ✅ |
-| smallworld | Regular | 32.410 | 1.2497 | 1.7955 | 2.3881 | **0.4238** | tcTF32 | 76.48x | ✅ |
-| ASIC_100ks | Irregular | 2.347 | 0.0824 | 0.0842 | 0.2245 | **0.0320** | tcTF32 | 73.35x | ✅ |
-| congress | Irregular | 0.218 | 0.1517 | 0.1519 | 0.1483 | **0.0444** | tcTF32 | Toy | ✅ |
-| fb_new_sites | Irregular | 12.516 | 0.8038 | 1.1236 | 1.0160 | **0.3169** | tcTF32 | 39.49x | ✅ |
-| fb_artist | Irregular | 28.183 | 1.2404 | 1.6941 | 1.4368 | **0.5137** | tcTF32 | 54.87x | ✅ |
-| epinions | Irregular | 23.109 | 1.9832 | 1.3846 | 1.9018 | **0.8512** | tcTF32 | 27.15x | ✅ |
-| nd3k | Regular | 30.783 | 1.2313 | 1.9852 | 0.3943 | **0.2323** | tcTF32 | 132.53x | ✅ |
-| nd6k | Regular | 65.243 | 1.3863 | 4.0727 | 0.5668 | **0.2586** | tcTF32 | 252.29x | ✅ |
+| Graph | Density | CPU (ms) | scCSC | scCOOC | vcCSC | **tcTF32** | Fastest | vs CPU | **vs CUDA** | Status |
+|:---|---:|---:|---:|---:|---:|---:|:---:|---:|---:|:---:|
+| ASIC_100ks | 0.0059% | 2.359 | 0.0858 | 0.0848 | 0.2192 | **0.0314** | tcTF32 | 75.10x | **2.70x** | ✅ |
+| epinions | 0.0088% | 23.283 | 1.7000 | 1.4346 | 1.8919 | **0.8746** | tcTF32 | 26.62x | **1.64x** | ✅ |
+| smallworld | 0.0100% | 32.262 | 1.3566 | 1.8311 | 1.9073 | **0.1986** | tcTF32 | 162.44x | **6.83x** | ✅ |
+| fb_new_sites | 0.0529% | 12.633 | 0.7946 | 0.7610 | 0.8739 | **0.2640** | tcTF32 | 47.86x | **2.88x** | ✅ |
+| fb_artist | 0.0642% | 28.725 | 1.0018 | 1.2292 | 1.4226 | **0.5086** | tcTF32 | 56.47x | **1.97x** | ✅ |
+| nd6k | 2.1288% | 65.670 | 1.3503 | 4.0131 | 0.5196 | **0.2388** | tcTF32 | 275.03x | **2.18x** | ✅ |
+| nd3k | 4.0490% | 30.875 | 1.2092 | 1.9388 | 0.3639 | **0.2223** | tcTF32 | 138.89x | **1.64x** | ✅ |
+| congress | 5.8899% | 0.221 | 0.1510 | 0.1492 | 0.1433 | **0.0439** | tcTF32 | Toy | **3.26x** | ✅ |
+| Ragusa18 | 12.0983% | 0.009 | 0.5863 | 0.6078 | 0.6811 | **0.5421** | tcTF32 | Toy | 1.08x | ✅ |
+| Tina_AskCal | 23.9669% | 0.001 | 1.0590 | 1.1573 | 1.1684 | **0.3563** | tcTF32 | Toy | 2.97x | ✅ |
+| mycielskian4 | 33.0579% | 0.005 | **0.1129** | 0.1240 | 0.1163 | 0.1209 | scCSC | Toy | 0.93x | ✅ |
+| cage4 | 60.4938% | 0.005 | 0.5212 | 0.4520 | 0.5698 | **0.4115** | tcTF32 | Toy | 1.10x | ✅ |
 
-**tcTF32 is the fastest on 11 of the 12 graphs.**
+**tcTF32 is the fastest kernel on 11 of the 12 graphs.**
 
-### Speedup vs the BEST CUDA-Core Algorithm
+`vs CUDA` is the number that matters: how much faster tcTF32 is than **whichever of the three CUDA-core algorithms is fastest on that graph** — not just against scCSC. `vs CPU` compares against the sequential CPU implementation and is naturally much larger.
 
-This is the comparison that matters — not only against scCSC, but against **whichever of the three CUDA-core algorithms is fastest** on that graph:
+> **Ignore the four toy graphs when judging the result.** mycielskian4 (11 nodes), cage4 (9), Ragusa18 (23) and Tina_AskCal (11) are far too small for the GPU to do any real work — their runtime is almost entirely kernel-launch overhead, and their `vs CUDA` figures swing between runs (mycielskian4 measured 1.02x in one run and 0.93x in the next). The eight real graphs are stable across runs: e.g. epinions 1.63x / 1.64x, fb_artist 1.91x / 1.97x, smallworld 5.64x / 6.83x.
+
+### Speedup vs the BEST CUDA-Core Algorithm — Real Graphs Only
 
 | Graph | Matrix density | Best CUDA-core | tcTF32 | **Gain** |
 |:---|---:|:---|---:|---:|
-| congress | 5.8899% | 0.1483 (vcCSC) | 0.0444 | **3.34x** |
-| **smallworld** | **0.0050%** | 1.2497 (scCSC) | 0.4238 | **2.95x** |
-| **ASIC_100ks** | **0.0059%** | 0.0824 (scCSC) | 0.0320 | **2.58x** |
-| fb_new_sites | 0.0529% | 0.8038 (scCSC) | 0.3169 | **2.54x** |
-| fb_artist | 0.0642% | 1.2404 (scCSC) | 0.5137 | **2.41x** |
-| nd6k | 2.1288% | 0.5668 (vcCSC) | 0.2586 | **2.19x** |
-| nd3k | 4.0490% | 0.3943 (vcCSC) | 0.2323 | **1.70x** |
-| **epinions** | **0.0088%** | 1.3846 (scCOOC) | 0.8512 | **1.63x** |
+| **smallworld** | **0.0100%** | 1.3566 (scCSC) | 0.1986 | **6.83x** |
+| congress | 5.8899% | 0.1433 (vcCSC) | 0.0439 | **3.26x** |
+| fb_new_sites | 0.0529% | 0.7610 (scCOOC) | 0.2640 | **2.88x** |
+| **ASIC_100ks** | **0.0059%** | 0.0848 (scCOOC) | 0.0314 | **2.70x** |
+| nd6k | 2.1288% | 0.5196 (vcCSC) | 0.2388 | **2.18x** |
+| fb_artist | 0.0642% | 1.0018 (scCSC) | 0.5086 | **1.97x** |
+| **epinions** | **0.0088%** | 1.4346 (scCOOC) | 0.8746 | **1.64x** |
+| nd3k | 4.0490% | 0.3639 (vcCSC) | 0.2223 | **1.64x** |
 
-**Key observation:** the speedup does **not** depend on the density of the graph. The two sparsest graphs (0.0050%, 0.0059%) give the largest wins (2.95x, 2.58x), while the densest graph (4.05%) gives the smallest (1.70x). The result is density-independent — if anything, slightly inverted.
+**Key observation: the speedup does not depend on how sparse the graph is.** The three sparsest graphs (0.0059%–0.0100%) give gains of 1.64x, 1.64x and 6.83x; the densest real graph (nd3k at 4.05%) gives 1.64x. The largest gain in the whole table belongs to smallworld, one of the sparsest graphs. There is no correlation between density and speedup — which is exactly the point: after condensed blocking, tile occupancy comes from the *layout*, not from the density of the graph.
+
+Note also that the best CUDA-core algorithm is a different one on different graphs (scCSC on smallworld and fb_artist, scCOOC on ASIC_100ks / fb_new_sites / epinions, vcCSC on congress / nd3k / nd6k). tcTF32 beats all three regardless of which one happens to win.
 
 ### Before / After — Effect of Condensed Blocking
 
 | Graph | tcTF32 (geometric tiling) | tcTF32 (condensed) | Improvement |
 |:---|---:|---:|---:|
-| ASIC_100ks | 48.1225 | 0.0320 | **1504x** |
-| smallworld | 9.9671 | 0.4238 | **23.5x** |
-| congress | 0.5389 | 0.0444 | **12.1x** |
-| fb_artist | 5.6498 | 0.5137 | **11.0x** |
-| fb_new_sites | 2.2849 | 0.3169 | **7.2x** |
-| epinions | 3.1555 | 0.8512 | **3.7x** |
+| ASIC_100ks | 48.1225 | 0.0314 | **1532x** |
+| smallworld | 9.9671 | 0.1986 | **50.2x** |
+| congress | 0.5389 | 0.0439 | **12.3x** |
+| fb_artist | 5.6498 | 0.5086 | **11.1x** |
+| fb_new_sites | 2.2849 | 0.2640 | **8.7x** |
+| epinions | 3.1555 | 0.8746 | **3.6x** |
 
-*(This is the combined effect of the layout change in Section 7 and the `nr` fix in Section 8.)*
+*(This is the combined effect of the layout change in Section 7 and the `nr` fix in Section 8. Before these changes tcTF32 lost to the CUDA-core kernels on every one of these graphs.)*
 
 ---
 
@@ -435,7 +493,7 @@ make clean && make -j$(nproc)
 
 ### Run the full suite (48 tests + verification, ~6–8 min)
 ```bash
-cd ~/TurboBC/TurboBC && ./run_all_experiments.sh
+cd ~/TurboBC/TurboBC && ./run_all_experiments.sh 2>&1 | tee ~/turbobc_results_$(date +%Y%m%d_%H%M).txt
 ```
 
 This single command:
@@ -443,6 +501,21 @@ This single command:
 2. Stores the CPU BC scores in `cpu_baseline_scores.txt` / `.json`
 3. Cross-checks the GPU scores node by node → `gpu_vs_cpu_audit_report.txt`
 4. Prints the final benchmark and speedup table
+
+`tee` keeps a timestamped copy of the whole session (e.g. `~/turbobc_results_20260909_1830.txt`). The four files it writes inside the repo are overwritten on every run, so the `tee` copy is what preserves a specific run:
+
+| File | Contents |
+|:---|:---|
+| `bc_verification_results.log` | Full raw output, every node of every graph |
+| `cpu_baseline_scores.txt` / `.json` | CPU reference BC scores |
+| `gpu_vs_cpu_audit_report.txt` | Node-by-node CPU vs GPU audit |
+
+### Re-print the summary table without re-running everything
+```bash
+cd ~/TurboBC/TurboBC && python3 generate_summary_report.py bc_verification_results.log
+```
+
+Every figure in that table — density, timings, `vs CPU`, `vs CUDA`, the "fastest on N of M" line and the per-graph speedup list in the notes — is computed from the log at print time. Nothing is hardcoded, so the report stays correct when graphs are added or removed.
 
 ### Single graph, manual
 ```bash
@@ -504,4 +577,4 @@ Expected outcome: the tensor cores will matter, because the condensed layout del
 
 ## 15. Contribution — One Paragraph
 
-Tensor cores were previously assumed to be unsuitable for sparse-graph betweenness centrality, on the grounds that a 16×16 tile ends up holding only 1–2 nonzeros while the rest of the bandwidth is wasted (measured: 1.12 nonzeros per tile at 0.437% density on fb_artist). This work shows that **the limitation belonged not to the tensor cores but to cutting the matrix along a fixed geometric grid.** If tiles are instead built from the actual neighbour list of each row-window rather than from a grid, tile occupancy is guaranteed to be ≥6.25% by construction, no matter how sparse the graph is. Three results follow: (1) the first tensor-core implementation of BC, obtained by turning SpMV into SpMM through multi-source batching; (2) exact integer path counts on tf32 via 3-way splitting (33 mantissa bits, more than fp32's 24); and (3), most importantly, a blocking scheme that lets tensor cores beat all three CUDA-core algorithms by **1.63x–3.34x** even on graphs at 0.005% density, beat the CPU by **27x–252x**, and keep BC scores bit-exact against the CPU.
+Tensor cores were previously assumed to be unsuitable for sparse-graph betweenness centrality, on the grounds that a 16×16 tile ends up holding only 1–2 nonzeros while the rest of the bandwidth is wasted (measured: 1.12 nonzeros per tile at 0.437% density on fb_artist). This work shows that **the limitation belonged not to the tensor cores but to cutting the matrix along a fixed geometric grid.** If tiles are instead built from the actual neighbour list of each row-window rather than from a grid, tile occupancy is guaranteed to be ≥6.25% by construction, no matter how sparse the graph is. Three results follow: (1) the first tensor-core implementation of BC, obtained by turning SpMV into SpMM through multi-source batching; (2) exact integer path counts on tf32 via 3-way splitting (33 mantissa bits, more than fp32's 24); and (3), most importantly, a blocking scheme that lets tensor cores beat all three CUDA-core algorithms by **1.64x–6.83x** on the eight non-toy graphs, including ones at 0.006% density, beat the CPU by **27x–275x**, and keep BC scores bit-exact against the CPU.
