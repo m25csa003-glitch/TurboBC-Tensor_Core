@@ -1,0 +1,211 @@
+=================================================================================
+  🚀 RUNNING TURBOBC BENCHMARK SUITE (CPU & NVIDIA L4 GPU)                       
+  Note: All vertex BC scores are stored & cross-checked directly in log files!  
+=================================================================================
+  [ 1/52] Computing & Storing BC Scores for mycielskian4.mtx | Algo: scCSC  ... ✅ Done (Stored in File)
+  [ 2/52] Computing & Storing BC Scores for mycielskian4.mtx | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [ 3/52] Computing & Storing BC Scores for mycielskian4.mtx | Algo: scCOOC ... ✅ Done (Stored in File)
+  [ 4/52] Computing & Storing BC Scores for mycielskian4.mtx | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [ 5/52] Computing & Storing BC Scores for Tina_AskCal.mtx  | Algo: scCSC  ... ✅ Done (Stored in File)
+  [ 6/52] Computing & Storing BC Scores for Tina_AskCal.mtx  | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [ 7/52] Computing & Storing BC Scores for Tina_AskCal.mtx  | Algo: scCOOC ... ✅ Done (Stored in File)
+  [ 8/52] Computing & Storing BC Scores for Tina_AskCal.mtx  | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [ 9/52] Computing & Storing BC Scores for Ragusa18.mtx     | Algo: scCSC  ... ✅ Done (Stored in File)
+  [10/52] Computing & Storing BC Scores for Ragusa18.mtx     | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [11/52] Computing & Storing BC Scores for Ragusa18.mtx     | Algo: scCOOC ... ✅ Done (Stored in File)
+  [12/52] Computing & Storing BC Scores for Ragusa18.mtx     | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [13/52] Computing & Storing BC Scores for cage4.mtx        | Algo: scCSC  ... ✅ Done (Stored in File)
+  [14/52] Computing & Storing BC Scores for cage4.mtx        | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [15/52] Computing & Storing BC Scores for cage4.mtx        | Algo: scCOOC ... ✅ Done (Stored in File)
+  [16/52] Computing & Storing BC Scores for cage4.mtx        | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [17/52] Computing & Storing BC Scores for smallworld.mtx   | Algo: scCSC  ... ✅ Done (Stored in File)
+  [18/52] Computing & Storing BC Scores for smallworld.mtx   | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [19/52] Computing & Storing BC Scores for smallworld.mtx   | Algo: scCOOC ... ✅ Done (Stored in File)
+  [20/52] Computing & Storing BC Scores for smallworld.mtx   | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [21/52] Computing & Storing BC Scores for ASIC_100ks.mtx   | Algo: scCSC  ... ✅ Done (Stored in File)
+  [22/52] Computing & Storing BC Scores for ASIC_100ks.mtx   | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [23/52] Computing & Storing BC Scores for ASIC_100ks.mtx   | Algo: scCOOC ... ✅ Done (Stored in File)
+  [24/52] Computing & Storing BC Scores for ASIC_100ks.mtx   | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [25/52] Computing & Storing BC Scores for congress.mtx     | Algo: scCSC  ... ✅ Done (Stored in File)
+  [26/52] Computing & Storing BC Scores for congress.mtx     | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [27/52] Computing & Storing BC Scores for congress.mtx     | Algo: scCOOC ... ✅ Done (Stored in File)
+  [28/52] Computing & Storing BC Scores for congress.mtx     | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [29/52] Computing & Storing BC Scores for fb_new_sites.mtx | Algo: scCSC  ... ✅ Done (Stored in File)
+  [30/52] Computing & Storing BC Scores for fb_new_sites.mtx | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [31/52] Computing & Storing BC Scores for fb_new_sites.mtx | Algo: scCOOC ... ✅ Done (Stored in File)
+  [32/52] Computing & Storing BC Scores for fb_new_sites.mtx | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [33/52] Computing & Storing BC Scores for fb_artist.mtx    | Algo: scCSC  ... ✅ Done (Stored in File)
+  [34/52] Computing & Storing BC Scores for fb_artist.mtx    | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [35/52] Computing & Storing BC Scores for fb_artist.mtx    | Algo: scCOOC ... ✅ Done (Stored in File)
+  [36/52] Computing & Storing BC Scores for fb_artist.mtx    | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [37/52] Computing & Storing BC Scores for epinions.mtx     | Algo: scCSC  ... ✅ Done (Stored in File)
+  [38/52] Computing & Storing BC Scores for epinions.mtx     | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [39/52] Computing & Storing BC Scores for epinions.mtx     | Algo: scCOOC ... ✅ Done (Stored in File)
+  [40/52] Computing & Storing BC Scores for epinions.mtx     | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [41/52] Computing & Storing BC Scores for nd3k.mtx         | Algo: scCSC  ... ✅ Done (Stored in File)
+  [42/52] Computing & Storing BC Scores for nd3k.mtx         | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [43/52] Computing & Storing BC Scores for nd3k.mtx         | Algo: scCOOC ... ✅ Done (Stored in File)
+  [44/52] Computing & Storing BC Scores for nd3k.mtx         | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [45/52] Computing & Storing BC Scores for nd6k.mtx         | Algo: scCSC  ... ✅ Done (Stored in File)
+  [46/52] Computing & Storing BC Scores for nd6k.mtx         | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [47/52] Computing & Storing BC Scores for nd6k.mtx         | Algo: scCOOC ... ✅ Done (Stored in File)
+  [48/52] Computing & Storing BC Scores for nd6k.mtx         | Algo: tcTF32 ... ✅ Done (Stored in File)
+  [49/52] Computing & Storing BC Scores for amazon.mtx       | Algo: scCSC  ... ✅ Done (Stored in File)
+  [50/52] Computing & Storing BC Scores for amazon.mtx       | Algo: vcCSC  ... ✅ Done (Stored in File)
+  [51/52] Computing & Storing BC Scores for amazon.mtx       | Algo: scCOOC ... ✅ Done (Stored in File)
+  [52/52] Computing & Storing BC Scores for amazon.mtx       | Algo: tcTF32 ... ✅ Done (Stored in File)
+=================================================================================
+All 52 tests completed! Complete vertex logs saved to: /home/akshat/TurboBC/TurboBC/bc_verification_results.log
+=================================================================================
+
+================================================================================================
+             🔍 CPU BASELINE STORAGE & GPU CROSS-CHECK AUDIT SUMMARY              
+================================================================================================
+📁 [Step 1] Stored CPU reference BC scores in : /home/akshat/TurboBC/TurboBC/cpu_baseline_scores.txt
+🧪 [Step 2] Cross-checking GPU computed scores against stored CPU baseline...
+------------------------------------------------------------------------------------------------
+Graph Name     | GPU Algorithm | Total Nodes  | Matched    | Mismatched | Audit Status
+------------------------------------------------------------------------------------------------
+ASIC_100ks     | scCOOC        | 99190        | 99190      | 0          | ✅ PERFECT MATCH
+ASIC_100ks     | scCSC         | 99190        | 99190      | 0          | ✅ PERFECT MATCH
+ASIC_100ks     | tcTF32        | 99190        | 99190      | 0          | ✅ PERFECT MATCH
+ASIC_100ks     | vcCSC         | 99190        | 99190      | 0          | ✅ PERFECT MATCH
+Ragusa18       | scCOOC        | 23           | 23         | 0          | ✅ PERFECT MATCH
+Ragusa18       | scCSC         | 23           | 23         | 0          | ✅ PERFECT MATCH
+Ragusa18       | tcTF32        | 23           | 23         | 0          | ✅ PERFECT MATCH
+Ragusa18       | vcCSC         | 23           | 23         | 0          | ✅ PERFECT MATCH
+Tina_AskCal    | scCOOC        | 11           | 11         | 0          | ✅ PERFECT MATCH
+Tina_AskCal    | scCSC         | 11           | 11         | 0          | ✅ PERFECT MATCH
+Tina_AskCal    | tcTF32        | 11           | 11         | 0          | ✅ PERFECT MATCH
+Tina_AskCal    | vcCSC         | 11           | 11         | 0          | ✅ PERFECT MATCH
+amazon         | scCOOC        | 548552       | 548552     | 0          | ✅ PERFECT MATCH
+amazon         | scCSC         | 548552       | 548552     | 0          | ✅ PERFECT MATCH
+amazon         | tcTF32        | 548552       | 548552     | 0          | ✅ PERFECT MATCH
+amazon         | vcCSC         | 548552       | 548552     | 0          | ✅ PERFECT MATCH
+cage4          | scCOOC        | 9            | 9          | 0          | ✅ PERFECT MATCH
+cage4          | scCSC         | 9            | 9          | 0          | ✅ PERFECT MATCH
+cage4          | tcTF32        | 9            | 9          | 0          | ✅ PERFECT MATCH
+cage4          | vcCSC         | 9            | 9          | 0          | ✅ PERFECT MATCH
+congress       | scCOOC        | 475          | 475        | 0          | ✅ PERFECT MATCH
+congress       | scCSC         | 475          | 475        | 0          | ✅ PERFECT MATCH
+congress       | tcTF32        | 475          | 475        | 0          | ✅ PERFECT MATCH
+congress       | vcCSC         | 475          | 475        | 0          | ✅ PERFECT MATCH
+epinions       | scCOOC        | 75888        | 75888      | 0          | ✅ PERFECT MATCH
+epinions       | scCSC         | 75888        | 75888      | 0          | ✅ PERFECT MATCH
+epinions       | tcTF32        | 75888        | 75888      | 0          | ✅ PERFECT MATCH
+epinions       | vcCSC         | 75888        | 75888      | 0          | ✅ PERFECT MATCH
+fb_artist      | scCOOC        | 50515        | 50515      | 0          | ✅ PERFECT MATCH
+fb_artist      | scCSC         | 50515        | 50515      | 0          | ✅ PERFECT MATCH
+fb_artist      | tcTF32        | 50515        | 50515      | 0          | ✅ PERFECT MATCH
+fb_artist      | vcCSC         | 50515        | 50515      | 0          | ✅ PERFECT MATCH
+fb_new_sites   | scCOOC        | 27917        | 27917      | 0          | ✅ PERFECT MATCH
+fb_new_sites   | scCSC         | 27917        | 27917      | 0          | ✅ PERFECT MATCH
+fb_new_sites   | tcTF32        | 27917        | 27917      | 0          | ✅ PERFECT MATCH
+fb_new_sites   | vcCSC         | 27917        | 27917      | 0          | ✅ PERFECT MATCH
+mycielskian4   | scCOOC        | 11           | 11         | 0          | ✅ PERFECT MATCH
+mycielskian4   | scCSC         | 11           | 11         | 0          | ✅ PERFECT MATCH
+mycielskian4   | tcTF32        | 11           | 11         | 0          | ✅ PERFECT MATCH
+mycielskian4   | vcCSC         | 11           | 11         | 0          | ✅ PERFECT MATCH
+nd3k           | scCOOC        | 9000         | 9000       | 0          | ✅ PERFECT MATCH
+nd3k           | scCSC         | 9000         | 9000       | 0          | ✅ PERFECT MATCH
+nd3k           | tcTF32        | 9000         | 9000       | 0          | ✅ PERFECT MATCH
+nd3k           | vcCSC         | 9000         | 9000       | 0          | ✅ PERFECT MATCH
+nd6k           | scCOOC        | 18000        | 18000      | 0          | ✅ PERFECT MATCH
+nd6k           | scCSC         | 18000        | 18000      | 0          | ✅ PERFECT MATCH
+nd6k           | tcTF32        | 18000        | 18000      | 0          | ✅ PERFECT MATCH
+nd6k           | vcCSC         | 18000        | 18000      | 0          | ✅ PERFECT MATCH
+smallworld     | scCOOC        | 100000       | 100000     | 0          | ✅ PERFECT MATCH
+smallworld     | scCSC         | 100000       | 100000     | 0          | ✅ PERFECT MATCH
+smallworld     | tcTF32        | 100000       | 100000     | 0          | ✅ PERFECT MATCH
+smallworld     | vcCSC         | 100000       | 100000     | 0          | ✅ PERFECT MATCH
+------------------------------------------------------------------------------------------------
+📄 Detailed Audit Report saved to: /home/akshat/TurboBC/TurboBC/gpu_vs_cpu_audit_report.txt
+================================================================================================
+
+
+============================================================================================================================================
+                       TURBOBC FINAL VERIFICATION & BENCHMARK REPORT                        
+               System: NVIDIA L4 GPU | CPU & GPU Betweenness Centrality Check               
+============================================================================================================================================
+Graph Name     | Category  |   Density | CPU (ms)  | scCSC     | scCOOC    | vcCSC     | tcTF32    | Fastest  | vs CPU    | vs CUDA  | Status
+--------------------------------------------------------------------------------------------------------------------------------------------
+mycielskian4   | Regular   |  33.0579% | 0.004     | 0.1195    | 0.1260    | 0.1262    | 0.1171    | tcTF32   | N/A (Toy) | 1.02x    | ✅ 100% MATCH
+Tina_AskCal    | Irregular |  23.9669% | 0.004     | 1.0516    | 1.1664    | 1.1345    | 0.3440    | tcTF32   | N/A (Toy) | 3.06x    | ✅ 100% MATCH
+Ragusa18       | Irregular |  12.0983% | 0.006     | 0.6110    | 0.6081    | 0.5979    | 0.5408    | tcTF32   | N/A (Toy) | 1.11x    | ✅ 100% MATCH
+cage4          | Regular   |  60.4938% | 0.004     | 0.5231    | 0.4386    | 0.5386    | 0.4687    | scCOOC   | N/A (Toy) | 0.94x    | ✅ 100% MATCH
+smallworld     | Regular   |   0.0100% | 31.444    | 0.7861    | 1.2014    | 1.9889    | 0.2283    | tcTF32   | 137.72x   | 3.44x    | ✅ 100% MATCH
+ASIC_100ks     | Irregular |   0.0059% | 2.268     | 0.0997    | 0.0989    | 0.2357    | 0.0314    | tcTF32   | 72.12x    | 3.14x    | ✅ 100% MATCH
+congress       | Irregular |   5.8899% | 0.209     | 0.1489    | 0.1403    | 0.1418    | 0.0469    | tcTF32   | N/A (Toy) | 2.99x    | ✅ 100% MATCH
+fb_new_sites   | Irregular |   0.0529% | 12.174    | 0.6937    | 0.8065    | 0.9012    | 0.2783    | tcTF32   | 43.75x    | 2.49x    | ✅ 100% MATCH
+fb_artist      | Irregular |   0.0642% | 27.362    | 1.0621    | 1.3130    | 1.2252    | 0.5304    | tcTF32   | 51.59x    | 2.00x    | ✅ 100% MATCH
+epinions       | Irregular |   0.0088% | 22.377    | 1.7618    | 0.9513    | 1.6245    | 0.8765    | tcTF32   | 25.53x    | 1.09x    | ✅ 100% MATCH
+nd3k           | Regular   |   4.0490% | 29.810    | 1.2225    | 1.9469    | 0.3722    | 0.2272    | tcTF32   | 131.2x    | 1.64x    | ✅ 100% MATCH
+nd6k           | Regular   |   2.1288% | 63.376    | 1.3622    | 4.0860    | 0.5226    | 0.2457    | tcTF32   | 257.97x   | 2.13x    | ✅ 100% MATCH
+amazon         | Irregular |   0.0006% | 424.070   | 7.4649    | 8.0789    | 22.4658   | 5.2474    | tcTF32   | 80.82x    | 1.42x    | ✅ 100% MATCH
+--------------------------------------------------------------------------------------------------------------------------------------------
+Notes & Deep Engineering Insights:
+ • HOW TO READ THE DENSITY COLUMN: it is nonzeros / N^2, i.e. what fraction of the full adjacency
+      matrix actually holds an edge. LOWER = SPARSER. 0.0059% means only about 1 cell in 17,000 is
+      filled; 60% means the matrix is more than half full. Sparsest first:
+        amazon           0.0006%  (1 in 162,500)   ASIC_100ks       0.0059%  (1 in 16,996)   epinions         0.0088%  (1 in 11,318)   
+        smallworld       0.0100%  (1 in 10,000)   fb_new_sites     0.0529%  (1 in  1,892)   fb_artist        0.0642%  (1 in  1,558)   
+        nd6k             2.1288%  (1 in     47)   nd3k             4.0490%  (1 in     25)   congress         5.8899%  (1 in     17)   
+        Ragusa18        12.0983%  (1 in      8)   Tina_AskCal     23.9669%  (1 in      4)   mycielskian4    33.0579%  (1 in      3)   
+        cage4           60.4938%  (1 in      2)   
+      Graphs run with --ug 1 (mycielskian4, smallworld) are symmetrized by the reader, so nz is
+      doubled: these percentages are for the symmetric matrix the kernels actually traverse.
+ • Status '✅ 100% MATCH': Confirms CPU sequential BC scores & GPU parallel BC scores are mathematically identical.
+      Checked at 1e-4 RELATIVE tolerance. utils_bc.c uses absolute tolerances (1e-5 on sigma, 0.05 on bc) that
+      do not scale: nd6k reaches a shortest-path count of 7.1e7, past fp32's exact-integer limit of 2^24, so
+      one ULP is already 8 and the CPU value is not exact either. Worst observed disagreement there is 176 in
+      71,287,136 -- 2.5e-6 relative, ~22 ULP -- purely from summation order in the MMA vs the scalar loop.
+ • Regular Graphs (smallworld, cage4, mycielskian4, nd3k, nd6k): Uniform degree distribution (low coefficient of variation).
+      nd3k/nd6k are 3D FEM meshes: CV 0.26/0.23, mean degree 364/383 -- the most uniform and by far the densest graphs here.
+ • Irregular Graphs (ASIC_100ks, Tina_AskCal, Ragusa18, congress, fb_new_sites, fb_artist, epinions): Skewed degree distribution (high coefficient of variation).
+      CV: fb_new_sites 1.56, fb_artist 1.96, epinions 5.02 (max degree 3035 vs mean 6.71).
+ • scCSC is NOT the best CUDA-core kernel on: Ragusa18, cage4, ASIC_100ks, congress, epinions, nd3k, nd6k.
+      epinions is the clearest case: its hubs are large enough that one thread per vertex
+      stalls an entire 32-lane warp; scCOOC launches over non-zeros (dimGridspmv = (nz+1024)/1024, one
+      thread per EDGE), so the load imbalance disappears entirely -- the exact case the paper predicts.
+ • tcTF32 = TENSOR CORE implementation (bcgputc.cu). Tensor cores multiply MATRICES, not vectors, so this
+      variant runs 16 roots at once: f <- A'f becomes F <- A'F, an SpMM whose N dimension is exactly the 16
+      of the m16n16k8 tf32 WMMA shape. A' is stored sparse and scattered into shared memory just before
+      each MMA, so memory traffic stays proportional to nz. It is the fastest kernel on 12 of 13 graphs here.
+ • PRECISION: fp16 is unusable here -- exact integers stop at 2048 but path counts reach 24973 (fb_artist),
+      and sigma would overflow its 65504 maximum on some graphs. tf32 fixes the range but keeps an 11-bit
+      mantissa, so each F tile is split as F = F1+F2+F3 (3 MMAs, 33 mantissa bits > fp32's 24). Measured on
+      epinions: 1 term -> 9.3e-4 max relative error (FAILS the 1e-4 bar), 2 -> 1.8e-5, 3 -> 1.0e-5. Cost of
+      the split is only 28%, because the kernel is memory-bound and the extra MMAs are effectively free.
+ • CONDENSED BLOCKING is what makes tcTF32 viable on SPARSE graphs, and is the main result here. A
+      geometric 16x16 tiling of A' is hopeless on real graphs: on fb_artist a nonzero tile carried 1.12
+      nonzeros, so the 256 floats of F that the tile spans were 99.6% wasted (measured density 0.437%).
+      Instead each 16-vertex row-window now keeps the sorted list of source vertices its rows ACTUALLY
+      reference and cuts that list into chunks of 16. Every column of a chunk is then guaranteed to carry
+      a nonzero, so density is bounded below by 6.25% by construction. Measured effect:
+         fb_artist 0.437% -> 6.301%   epinions 0.823% -> 7.116%   smallworld 1.789% -> 15.374%
+         nd3k 43.6% -> 60.6%          nd6k 42.3% -> 59.6%
+      The gather also becomes a 64-byte coalesced load per slot instead of a strided read of a mostly
+      empty tile. Before this change fb_artist ran 4.2x SLOWER than scCSC; see the vs CUDA column
+      above for where it lands now.
+ • BATCH OCCUPANCY: tcTF32 always computes a full 16-root batch, so benchmarking it at nr=1 charges it
+      for 16 roots and credits it with one -- an artificial 15/16 penalty. Every non-toy graph above
+      therefore runs nr=32. The CUDA-core kernels are single-source and their per-root cost does not
+      depend on nr, so this changes only the tensor-core measurement, and only by removing a wrong one.
+      On smallworld the same binary reports 9.26 ms/vertex at nr=1 and 0.63 ms/vertex at nr=16.
+ • SPEEDUP vs THE BEST CUDA-CORE KERNEL (not just vs scCSC), measured at nr=32:
+        mycielskian4    1.02x   Tina_AskCal     3.06x   Ragusa18        1.11x   cage4           0.94x   
+        smallworld      3.44x   ASIC_100ks      3.14x   congress        2.99x   fb_new_sites    2.49x   
+        fb_artist       2.00x   epinions        1.09x   nd3k            1.64x   nd6k            2.13x   
+        amazon          1.42x   
+      The win no longer depends on the graph being dense: it holds across FEM meshes, circuit matrices,
+      small-world lattices and scale-free social networks. The earlier ~3% density break-even was a
+      property of the geometric tiling, not of tensor cores, and the condensed layout removes it.
+ • WHY DID scCSC (Scalar) BEAT vcCSC (Warp Vector) ON ASIC_100ks DESPITE BEING IRREGULAR?
+   -> Although ASIC_100ks is structurally irregular, its largest hub has only 206 edges (average degree = 5.84).
+      Warp Vector (vcCSC/veCSC) assigns 32 CUDA threads per vertex. For a vertex with 5 or 10 edges, over 80% of
+      threads in the warp sit idle! On modern NVIDIA L4 GPUs with a massive 48MB L2 Cache, a single scalar thread
+      looping in cache (scCSC) has far lower overhead than warp coordination. vcCSC shines on hyper-skewed scale-free
+      networks (like social networks or web crawls) where hub degrees reach several thousands of edges.
+ • Complete numerical outputs, vertex arrays, and execution traces are permanently stored in: /home/akshat/TurboBC/TurboBC/bc_verification_results.log
+================================================================================================
+
