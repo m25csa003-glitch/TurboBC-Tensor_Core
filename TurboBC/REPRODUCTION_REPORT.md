@@ -556,6 +556,81 @@ Example — tensor core on fb_artist, with CPU verification:
 
 ## 14. Findings & Open Items
 
+### Finding: int32 Overflow in the Path Counts
+
+This is the most consequential finding of the scaling work, and it is worth
+stating carefully because at first glance it looks like a bug in the
+tensor-core kernel when it is in fact the opposite.
+
+Three larger graphs were added to the suite and then removed: `nd24k`
+(72,000 nodes / 28.7M edges), `roadNet_PA` (1,090,920 / 3.08M) and `youtube`
+(1,157,828 / 5.98M). On the first two, the verification reported a mismatch:
+
+| Graph | scCSC | vcCSC | scCOOC | tcTF32 |
+|:---|:---:|:---:|:---:|:---:|
+| nd24k | ✅ | ✅ | ❌ 54,494 nodes | ❌ 54,865 nodes |
+| roadNet_PA | ✅ | ✅ | ❌ 262,707 nodes | ❌ 256,218 nodes |
+| youtube | ✅ | ✅ | ✅ | ❌ 76 nodes |
+
+The pattern is the clue: `scCOOC` — the paper's own, unmodified kernel — fails
+on exactly the graphs `tcTF32` fails on. Whatever is happening is not specific
+to the tensor-core code.
+
+**The cause is the accumulator type.** The frontier is a count of shortest
+paths, and every implementation except the tensor-core one accumulates it in a
+32-bit integer:
+
+| Implementation | Frontier type | Location |
+|:---|:---|:---|
+| CPU reference | `int *f`, `int sum` | `spmv_seq.c:27,30` |
+| scCSC | `int *f_d, *ft_d`, `int sum` | `bcgpugcsc_sc.cu:331` |
+| vcCSC | `int sum` | `bcgpugcsc_wa.cu` |
+| scCOOC | `int f`, `atomicAdd` on `int*` | `bcgpugcooc_sc.cu:301` |
+| **tcTF32** | **`float *F_d, *FT_d`** | `bcgputc.cu:243` |
+
+On these graphs the true path counts run far past `INT_MAX` = 2,147,483,647:
+
+```
+nd24k        CPU reported max sigma = 2,146,010,000      <- pinned just under INT_MAX
+             tcTF32 computed        =   237,640,000,000  <- 111x past int32
+
+roadNet_PA   CPU reported max sigma = 2,146,960,000      <- pinned just under INT_MAX
+             tcTF32 computed        = 16,909,200,000,000,000  <- 7.9 million x past int32
+```
+
+That the CPU maximum sits a hair below `INT_MAX` on both graphs, independently,
+is conclusive: the counts are overflowing.
+
+What follows explains every row of the table above:
+
+* **CPU, scCSC and vcCSC all overflow int32 in the same deterministic way.**
+  They therefore agree with one another and are reported as a PERFECT MATCH —
+  on values that are wrong.
+* **scCOOC overflows too, but through `atomicAdd` with nondeterministic
+  ordering**, so it wraps differently and disagrees with the others.
+* **tcTF32 does not overflow**, because it accumulates in `float`. It produces
+  the correct order of magnitude and is therefore flagged as mismatching a
+  reference that is itself broken.
+
+**On these graphs the tensor-core kernel is the only implementation that does
+not silently return garbage.**
+
+One honest caveat: `tcTF32`'s answer is not exact either. fp32 represents
+integers exactly only up to 2²⁴ = 16,777,216, so a count of 1.7e16 is
+approximate. The real conclusion is that **exact BC on graphs of this
+connectivity requires 64-bit integers or doubles throughout**, which no
+variant here provides. The correct fix is to widen the frontier and sigma to
+`long`/`double` in the CPU reference and all four kernels; that was out of
+scope here and is recorded as future work.
+
+`youtube` is a milder, separate case: only 76 of 1,157,828 nodes disagree
+(0.007%), with no int32 overflow involved. That is the fp32 mantissa boundary,
+the same effect documented in the tolerance note in Section 11.
+
+The three graphs were removed from the suite because a benchmark whose
+reference implementation is wrong cannot verify anything. The commands to
+restore them are in `graphData/LARGE_GRAPHS.md`.
+
 ### Finding: A Pre-existing Issue in the Paper's Code
 
 On directed (asymmetric) graphs the delta phase uses `A'` (predecessors) where Brandes' algorithm requires `A` (successors). The CPU and all GPU implementations show the **same behaviour**, so they agree with each other perfectly, but they differ from `networkx`.

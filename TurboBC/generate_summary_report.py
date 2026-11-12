@@ -21,7 +21,8 @@ graph_data = {}
 # power-law social networks.  epinions is by far the most skewed -- max degree
 # 3035 against a mean of 6.71 -- and the clearest case of scCSC losing to scCOOC.
 IRREGULAR_GRAPHS = {"ASIC_100ks", "Tina_AskCal", "Ragusa18", "congress",
-                    "fb_new_sites", "fb_artist", "epinions"}
+                    "fb_new_sites", "fb_artist", "epinions",
+                    "amazon"}
 REGULAR_GRAPHS = {"smallworld", "mycielskian4", "cage4", "nd3k", "nd6k"}
 
 for block in blocks[1:]:

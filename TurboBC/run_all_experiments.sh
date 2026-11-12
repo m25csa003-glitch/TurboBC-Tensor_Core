@@ -38,7 +38,7 @@ run_test() {
         fmt_name="tcTF32"
     fi
 
-    printf "  [%2d/48] Computing & Storing BC Scores for %-16s | Algo: %-6s ... " "$COUNT" "$file.mtx" "$fmt_name"
+    printf "  [%2d/52] Computing & Storing BC Scores for %-16s | Algo: %-6s ... " "$COUNT" "$file.mtx" "$fmt_name"
 
     echo "---------------------------------------------------------------------------------" >> "$LOGFILE"
     echo "[EXPERIMENT] Graph: $file.mtx | Format: $fmt_name" >> "$LOGFILE"
@@ -51,7 +51,7 @@ run_test() {
     ((COUNT++))
 }
 
-# Run all 4 algorithms for each of the 12 test graphs
+# Run all 4 algorithms for each of the 13 test graphs
 for file in mycielskian4; do
     run_test $file 0 1 0 1 1 0 100 1
     run_test $file 0 1 1 1 1 0 100 1
@@ -122,8 +122,25 @@ for file in nd3k nd6k; do
     run_test $file 0 0 3 1 32 0 10 1
 done
 
+# amazon: SNAP com-Amazon co-purchase network, 548,552 nodes / 1.85M edges --
+# the largest graph in the suite.  Already stored with both edge directions,
+# hence w 0 / ug 0.  repet 3 rather than 10: big enough that timing is stable.
+#
+# nd24k, youtube and roadNet_PA were tested and removed.  All three drive the
+# shortest-path counts past what int32 can hold (roadNet_PA reaches ~1.7e16
+# against INT_MAX = 2.1e9), and the CPU reference, scCSC and vcCSC all
+# accumulate the frontier in int -- so they overflow identically, agree with
+# each other, and report a PERFECT MATCH on values that are simply wrong.
+# See REPRODUCTION_REPORT.md, "int32 overflow in the path counts".
+for file in amazon; do
+    run_test $file 0 0 0 1 32 0 3 1
+    run_test $file 0 0 1 1 32 0 3 1
+    run_test $file 0 0 2 1 32 0 3 1
+    run_test $file 0 0 3 1 32 0 3 1
+done
+
 echo "================================================================================="
-echo "All 48 tests completed! Complete vertex logs saved to: $LOGFILE"
+echo "All 52 tests completed! Complete vertex logs saved to: $LOGFILE"
 echo "================================================================================="
 
 # Step 1: Extract CPU Baseline & Cross-Check GPU Scores
