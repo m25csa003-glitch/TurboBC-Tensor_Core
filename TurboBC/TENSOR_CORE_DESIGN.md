@@ -405,7 +405,7 @@ The accumulator `acc` is the one thing that survives across chunks — it lives 
 | Where it is built | CPU, in host code | GPU, inside the kernel |
 | How many times | **Once**, at the start | **Millions of times** |
 | Where it lives | GPU **global** memory | **Shared** memory (warp scratch) |
-| How big | 2.3 – 8.2 MB | 1 KB adjacency + 3 KB frontier |
+| How big | 1.9 – 10.4 MB on our graphs | 1 KB adjacency + 3 KB frontier |
 | How long it lives | **The entire run** | **~1 microsecond** |
 | Data representation | **Sparse** — non-zeros only | **Dense** 16×16 window |
 | Freed when | Function returns (line 367) | Immediately, by the next chunk |
@@ -494,6 +494,7 @@ All figures measured, not estimated. `nblocks` comes from the kernel's own diagn
 | fb_artist | 7.98 MB | 29.94 MB | 3.8x | 8.16 MB | 21.78 MB |
 | epinions | 4.46 MB | 34.99 MB | 7.7x | **2.32 MB** | 32.67 MB |
 | smallworld | 7.24 MB | 45.71 MB | 6.3x | **2.61 MB** | 43.10 MB |
+| amazon | 25.90 MB | 246.84 MB | 9.5x | 10.38 MB | 236.46 MB |
 
 ### Where the difference actually comes from
 
@@ -672,7 +673,7 @@ The tensor-core format is not an exception to sparse storage. It is a sparse for
 
 One more thing had to be solved before tensor cores could be used for BC at all: exactness.
 
-`sigma[v]` is the number of shortest paths from the root to `v`. It is an **integer**, and it can be enormous — 24,973 on `fb_artist`, and 4.13 × 10¹⁰ on `nd6k`. BC is only correct if these counts are exact.
+`sigma[v]` is the number of shortest paths from the root to `v`. It is an **integer**, and it can be enormous — 48,762 on `fb_artist` and 2.45 × 10⁸ on `nd6k` (the largest values over the 32 benchmark sources). BC is only correct if these counts are exact.
 
 | Format | Mantissa | Exact integers up to | Maximum value | Verdict |
 |:---|---:|---:|---:|:---|
@@ -680,7 +681,7 @@ One more thing had to be solved before tensor cores could be used for BC at all:
 | tf32 | 11 bits | 2,048 | 3.4 × 10³⁸ | ⚠️ range fine, precision not |
 | fp32 | 24 bits | 16,777,216 | 3.4 × 10³⁸ | ✅ what we need to match |
 
-fp16 is unusable for two independent reasons: its exact-integer range stops at 2,048 while path counts reach 24,973, and `sigma` would overflow its 65,504 maximum outright on several graphs. TF32 fixes the range — it carries fp32's exponent — but keeps the same 11-bit mantissa.
+fp16 is unusable for two independent reasons: its exact-integer range stops at 2,048 while path counts reach 48,762, and `sigma` would overflow its 65,504 maximum outright on several graphs. TF32 fixes the range — it carries fp32's exponent — but keeps the same 11-bit mantissa.
 
 **The fix is to split each value into three parts that are each exact in tf32:**
 
@@ -794,26 +795,29 @@ Both were confirmed by `compute-sanitizer`: **0 memcheck errors, 0 racecheck haz
 
 ## 15. Results
 
-All times in **ms per root vertex**, at `nr = 32`, all four algorithms on the same roots. Sorted sparsest graph first.
+All times in **ms per root vertex**, at `nr = 32`, all four algorithms on the same roots, averaged over 10 repetitions (3 on amazon). Sorted sparsest graph first. These are the numbers of the final run (`results/turbobc_results_20260926_1546.txt` at the repository root).
 
 | Graph | Density | CPU | scCSC | scCOOC | vcCSC | **tcTF32** | Fastest | **vs best CUDA** |
 |:---|---:|---:|---:|---:|---:|---:|:---:|---:|
-| ASIC_100ks | 0.0059% | 2.359 | 0.0858 | 0.0848 | 0.2192 | **0.0314** | tcTF32 | **2.70x** |
-| epinions | 0.0088% | 23.283 | 1.7000 | 1.4346 | 1.8919 | **0.8746** | tcTF32 | **1.64x** |
-| smallworld | 0.0100% | 32.262 | 1.3566 | 1.8311 | 1.9073 | **0.1986** | tcTF32 | **6.83x** |
-| fb_new_sites | 0.0529% | 12.633 | 0.7946 | 0.7610 | 0.8739 | **0.2640** | tcTF32 | **2.88x** |
-| fb_artist | 0.0642% | 28.725 | 1.0018 | 1.2292 | 1.4226 | **0.5086** | tcTF32 | **1.97x** |
-| nd6k | 2.1288% | 65.670 | 1.3503 | 4.0131 | 0.5196 | **0.2388** | tcTF32 | **2.18x** |
-| nd3k | 4.0490% | 30.875 | 1.2092 | 1.9388 | 0.3639 | **0.2223** | tcTF32 | **1.64x** |
-| congress | 5.8899% | 0.221 | 0.1510 | 0.1492 | 0.1433 | **0.0439** | tcTF32 | **3.26x** |
+| amazon | 0.0006% | 424.070 | 7.4649 | 8.0789 | 22.4658 | **5.2474** | tcTF32 | **1.42x** |
+| ASIC_100ks | 0.0059% | 2.268 | 0.0997 | 0.0989 | 0.2357 | **0.0314** | tcTF32 | **3.14x** |
+| epinions | 0.0088% | 22.377 | 1.7618 | 0.9513 | 1.6245 | **0.8765** | tcTF32 | **1.09x** |
+| smallworld | 0.0100% | 31.444 | 0.7861 | 1.2014 | 1.9889 | **0.2283** | tcTF32 | **3.44x** |
+| fb_new_sites | 0.0529% | 12.174 | 0.6937 | 0.8065 | 0.9012 | **0.2783** | tcTF32 | **2.49x** |
+| fb_artist | 0.0642% | 27.362 | 1.0621 | 1.3130 | 1.2252 | **0.5304** | tcTF32 | **2.00x** |
+| nd6k | 2.1288% | 63.376 | 1.3622 | 4.0860 | 0.5226 | **0.2457** | tcTF32 | **2.13x** |
+| nd3k | 4.0490% | 29.810 | 1.2225 | 1.9469 | 0.3722 | **0.2272** | tcTF32 | **1.64x** |
+| congress | 5.8899% | 0.209 | 0.1489 | 0.1403 | 0.1418 | **0.0469** | tcTF32 | **2.99x** |
 
-**The speedup does not depend on how sparse the graph is.** The three sparsest graphs give 2.70x, 1.64x and 6.83x; the densest real graph gives 1.64x. The largest gain in the table belongs to `smallworld`, one of the sparsest. After condensed blocking, tile occupancy is a property of the **layout**, not of the graph.
+**The speedup does not depend on how sparse the graph is.** The four sparsest graphs give 1.42x, 3.14x, 1.09x and 3.44x; the densest real graph gives 1.64x. The largest gain in the table belongs to `smallworld`, one of the sparsest. After condensed blocking, tile occupancy is a property of the **layout**, not of the graph. The two smallest gains have their own causes: `epinions`' skewed degrees already suit the edge-parallel `scCOOC`, and `amazon`'s BFS depth of 38 makes `tcTF32` run a full SpMM at every level while `scCSC` skips visited vertices.
 
-Note also that the best CUDA-core kernel is a *different* one on different graphs — `scCSC` on smallworld and fb_artist, `scCOOC` on ASIC_100ks / fb_new_sites / epinions, `vcCSC` on congress / nd3k / nd6k. `tcTF32` beats all three regardless of which happens to win.
+Note also that the best CUDA-core kernel is a *different* one on different graphs — `scCSC` on smallworld, fb_new_sites, fb_artist and amazon, `scCOOC` on ASIC_100ks, epinions and congress, `vcCSC` on nd3k and nd6k. `tcTF32` beats all three regardless of which happens to win.
 
-Correctness across the full 48-test suite: **1,524,156 node-level CPU-vs-GPU comparisons, 0 mismatches.**
+Correctness across the full 52-test suite: **3,718,364 node-level CPU-vs-GPU comparisons, 0 mismatches** at a 1e-4 relative tolerance.
 
-> The four toy graphs in the suite (mycielskian4 at 11 nodes, cage4 at 9, Ragusa18 at 23, Tina_AskCal at 11) are excluded from the table above. They are far too small for the GPU to do meaningful work — their runtime is almost entirely kernel-launch overhead, and their measured gains swing between runs. The eight real graphs are stable: e.g. epinions 1.63x / 1.64x and fb_artist 1.91x / 1.97x across two consecutive runs.
+> The four toy graphs in the suite (mycielskian4 at 11 nodes, cage4 at 9, Ragusa18 at 23, Tina_AskCal at 11) are excluded from the table above. They are far too small for the GPU to do meaningful work — their runtime is almost entirely kernel-launch overhead, and their measured gains swing between runs.
+
+> GPU timings also vary between runs on the real graphs. In repeated runs `tcTF32` stayed within about 1% on fb_artist, while the CUDA-core kernels varied by up to 10–20%, so the gains above move by a similar amount (fb_artist 1.96x–2.0x, amazon 1.22x–1.42x over three back-to-back runs).
 
 ---
 
@@ -821,9 +825,9 @@ Correctness across the full 48-test suite: **1,524,156 node-level CPU-vs-GPU com
 
 **What we compute.** Betweenness centrality for every vertex, on tensor cores, by turning the SpMV `f ← A'f` into the SpMM `F ← A'F` and processing 16 root vertices per batch — 16 because that is the N dimension of the `m16n16k8` tf32 WMMA fragment.
 
-**How we stay exact.** Shortest-path counts are integers reaching 4 × 10¹⁰. fp16 cannot hold them. TF32 has the range but only an 11-bit mantissa, so each value is split three ways — 33 mantissa bits, more than fp32's 24 — at a measured cost of about 20%. (Two splits, at 22 bits, are empirically sufficient on every graph tested and 1.03x–1.14x faster; three is the default because only three carries a proof of exactness.)
+**How we stay exact.** Shortest-path counts are integers reaching 2.45 × 10⁸ on `nd6k`. fp16 cannot hold them. TF32 has the range but only an 11-bit mantissa, so each value is split three ways — 33 mantissa bits, more than fp32's 24 — at a measured cost of about 20%. (Two splits, at 22 bits, are empirically sufficient on every graph tested and 1.03x–1.14x faster; three is the default because only three carries a proof of exactness.)
 
-**How we handle sparsity.** Tiles are built from each row-window's actual neighbour list rather than from a fixed geometric grid, which raises tile occupancy from 0.437% to 6.301% on `fb_artist` by construction, cuts memory traffic and MMA count by roughly 16x, and turns a 4.2x loss into a 1.97x win.
+**How we handle sparsity.** Tiles are built from each row-window's actual neighbour list rather than from a fixed geometric grid, which raises tile occupancy from 0.437% to 6.301% on `fb_artist` by construction, cuts memory traffic and MMA count by roughly 16x, and turns a 4.2x loss into a 2.00x win.
 
 **How we stay within memory.** This is the part most easily misread, so once more, plainly:
 
@@ -831,7 +835,7 @@ Correctness across the full 48-test suite: **1,524,156 node-level CPU-vs-GPU com
 
 **How far it scales.** Memory is not the binding constraint at any size studied here. On the L4's 22 GB, tcTF32 fits roughly 46–48 million nodes at average degree 10 (against 215–412 million for scCSC, the cost of 452 bytes per node instead of 36), and on graphs of average degree 100 or more all four algorithms converge on the same ~21-million-node ceiling, set by a 32-bit `nz` rather than by memory. The real limit is time: full exact BC over all roots takes about 26 seconds for `fb_artist`'s 50,515 nodes, which extrapolates to months at the memory ceiling. Full exact BC is practical up to roughly 1–2 million nodes; beyond that the multi-source design lends itself naturally to approximate BC over a sampled multiple of 16 roots. See Section 11 for the full derivation.
 
-Every one of the four algorithms stores the graph in O(nz). The tensor-core version's higher total memory — 3.8x to 7.7x, or 30–46 MB against 4.5–8 MB — comes entirely from running 16 roots concurrently, which makes each of the seven state arrays `n × 16` instead of `n × 1`. That is 0.2% of the L4's 23 GB, and it buys a 1.6x–6.8x speedup over the best CUDA-core kernel on every real graph tested, with BC scores that match the CPU exactly.
+Every one of the four algorithms stores the graph in O(nz). The tensor-core version's higher total memory — 3.8x to 9.5x that of `scCSC` (9.5x on `amazon`, whose 548,552 low-degree vertices make the `n × 16` state dominate) — comes entirely from running 16 roots concurrently, which makes each of the seven state arrays `n × 16` instead of `n × 1`. Even on amazon that is about 1% of the L4's 23 GB, and it buys a 1.09x–3.44x speedup over the best CUDA-core kernel on every real graph tested, with BC scores that match the CPU within a 1e-4 relative tolerance.
 
 ---
 
@@ -841,8 +845,8 @@ Every one of the four algorithms stores the graph in O(nz). The tensor-core vers
 cd ~/TurboBC/TurboBC
 make clean && make -j$(nproc)
 
-# Full suite: 48 tests + verification, ~7 min, output saved
-./run_all_experiments.sh 2>&1 | tee ~/turbobc_results_$(date +%Y%m%d_%H%M).txt
+# Full suite: 52 tests + verification, output saved
+./run_all_experiments.sh 2>&1 | tee ../results/turbobc_results_$(date +%Y%m%d_%H%M).txt
 
 # One graph, all four algorithms
 for f in 0 1 2 3; do

@@ -100,9 +100,9 @@ for block in blocks[1:]:
     # Verification checks.
     #
     # utils_bc.c compares with ABSOLUTE tolerances that do not scale with the
-    # data: 1e-5 on sigma and 0.05 on bc.  On nd6k a shortest-path count reaches
-    # 7.1e7, which is 4x past fp32's exact-integer limit of 2^24, so one ULP is
-    # already 8 and the CPU's own value is not exact either; on epinions the
+    # data: 1e-5 on sigma and 0.05 on bc.  On nd6k shortest-path counts reach
+    # 2.45e8, about 15x past fp32's exact-integer limit of 2^24, so one ULP is
+    # 8 to 16 and the CPU's own value is not exact either; on epinions the
     # largest bc is ~3e6 and a single-ulp difference is ~0.36.  Any kernel that
     # sums in a different order than the scalar reference -- vcCSC's warp
     # reduction, scCOOC's atomicAdd, tcTF32's MMA -- then trips the check while
@@ -202,8 +202,8 @@ print("      Graphs run with --ug 1 (mycielskian4, smallworld) are symmetrized b
 print("      doubled: these percentages are for the symmetric matrix the kernels actually traverse.")
 print(" • Status '✅ 100% MATCH': Confirms CPU sequential BC scores & GPU parallel BC scores are mathematically identical.")
 print("      Checked at 1e-4 RELATIVE tolerance. utils_bc.c uses absolute tolerances (1e-5 on sigma, 0.05 on bc) that")
-print("      do not scale: nd6k reaches a shortest-path count of 7.1e7, past fp32's exact-integer limit of 2^24, so")
-print("      one ULP is already 8 and the CPU value is not exact either. Worst observed disagreement there is 176 in")
+print("      do not scale: nd6k shortest-path counts reach 2.45e8, past fp32's exact-integer limit of 2^24, so")
+print("      one ULP is 8 to 16 and the CPU value is not exact either. Worst observed disagreement there is 176 in")
 print("      71,287,136 -- 2.5e-6 relative, ~22 ULP -- purely from summation order in the MMA vs the scalar loop.")
 print(" • Regular Graphs (smallworld, cage4, mycielskian4, nd3k, nd6k): Uniform degree distribution (low coefficient of variation).")
 print("      nd3k/nd6k are 3D FEM meshes: CV 0.26/0.23, mean degree 364/383 -- the most uniform and by far the densest graphs here.")
@@ -221,11 +221,11 @@ print("      variant runs 16 roots at once: f <- A'f becomes F <- A'F, an SpMM w
 print("      of the m16n16k8 tf32 WMMA shape. A' is stored sparse and scattered into shared memory just before")
 _won = sum(1 for _d in graph_data.values() if _d.get("gpu_gain") and _d["gpu_gain"] > 1.0)
 print(f"      each MMA, so memory traffic stays proportional to nz. It is the fastest kernel on {_won} of {len(graph_data)} graphs here.")
-print(" \u2022 PRECISION: fp16 is unusable here -- exact integers stop at 2048 but path counts reach 24973 (fb_artist),")
+print(" \u2022 PRECISION: fp16 is unusable here -- exact integers stop at 2048 but path counts reach 48762 (fb_artist),")
 print("      and sigma would overflow its 65504 maximum on some graphs. tf32 fixes the range but keeps an 11-bit")
 print("      mantissa, so each F tile is split as F = F1+F2+F3 (3 MMAs, 33 mantissa bits > fp32's 24). Measured on")
-print("      epinions: 1 term -> 9.3e-4 max relative error (FAILS the 1e-4 bar), 2 -> 1.8e-5, 3 -> 1.0e-5. Cost of")
-print("      the split is only 28%, because the kernel is memory-bound and the extra MMAs are effectively free.")
+print("      epinions: 1 term -> 6.1e-4 max relative error (FAILS the 1e-4 bar), 2 -> 7.7e-6, 3 -> 7.7e-6. Cost of")
+print("      the split is only about 20%, because the kernel is memory-bound and the extra MMAs are effectively free.")
 print(" \u2022 CONDENSED BLOCKING is what makes tcTF32 viable on SPARSE graphs, and is the main result here. A")
 print("      geometric 16x16 tiling of A' is hopeless on real graphs: on fb_artist a nonzero tile carried 1.12")
 print("      nonzeros, so the 256 floats of F that the tile spans were 99.6% wasted (measured density 0.437%).")

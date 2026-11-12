@@ -99,7 +99,7 @@ F  ←  A' F                 F is n × 16  →   exactly the m16n16k8 tf32 WMMA 
 
 Two problems had to be solved:
 
-1. **Exactness.** Shortest-path counts are integers that grow fast: 24,973 on `fb_artist`, and past fp16's 65,504 maximum on `nd6k` and `amazon`. fp16 fails twice over (exact integers stop at 2,048; `sigma` would overflow its maximum). TF32 has fp32's range but only an 11-bit mantissa, so each value is split three ways — 33 mantissa bits, more than fp32's own 24 — at a measured cost of about 20%.
+1. **Exactness.** Shortest-path counts are integers that grow fast: 48,762 on `fb_artist`, and past fp16's 65,504 maximum on `nd6k` and `amazon`. fp16 fails twice over (exact integers stop at 2,048; `sigma` would overflow its maximum). TF32 has fp32's range but only an 11-bit mantissa, so each value is split three ways — 33 mantissa bits, more than fp32's own 24 — at a measured cost of about 20%.
 2. **Sparsity.** Solved by the condensed blocking described above.
 
 **The design never stores a dense matrix.** The graph is held in a sparse condensed format — O(nz), only a few MB (8.16 MB for `fb_artist`) — and a 16×16 dense window is assembled in *shared memory* for each chunk, multiplied, and discarded immediately, around 3.25 million times per run. A dense `n × n` matrix would be 37 GB for `smallworld` and would not even fit on the GPU.
