@@ -5,7 +5,7 @@ A **tensor-core implementation of Betweenness Centrality** (`tcTF32`), built on 
 This repository contains two things:
 
 * **Part A — a reproduction** of the original paper's three CUDA-core algorithms on modern hardware (NVIDIA L4, Ada Lovelace, sm_89), with all of its scientific claims verified
-* **Part B — a new fourth algorithm** that runs the BC computation on the GPU's **tensor cores** instead of its CUDA cores, and beats all three original algorithms on every real graph tested — including graphs at 0.006% density
+* **Part B — a new fourth algorithm** that runs the BC computation on the GPU's **tensor cores** instead of its CUDA cores, and beats all three original algorithms on every real graph tested — including graphs at 0.0006% density
 
 ---
 
@@ -23,30 +23,33 @@ Cutting the matrix along a fixed geometric grid is what leaves the tiles empty, 
 | epinions | 0.823% | **7.116%** |
 | smallworld | 1.789% | **15.374%** |
 
-With that change, `tcTF32` becomes the fastest of the four kernels on 11 of 12 test graphs.
+With that change, `tcTF32` becomes the fastest of the four kernels on 12 of the 13 test graphs (the exception is `cage4`, a 9-node toy graph).
 
 ---
 
 ## Results
 
-Times are **ms per root vertex**, at `nr = 32`, all four algorithms on identical roots. Sorted sparsest graph first.
+Times are **ms per root vertex**, at `nr = 32`, all four algorithms on identical roots, averaged over 10 repetitions (3 on amazon). Sorted sparsest graph first. These are the numbers of the final benchmark run, whose full output is in [`results/`](results/).
 
 | Graph | Density | Nodes | CPU | scCSC | scCOOC | vcCSC | **tcTF32** | **vs best CUDA core** |
 |:---|---:|---:|---:|---:|---:|---:|---:|---:|
-| ASIC_100ks | 0.0059% | 99,190 | 2.359 | 0.0858 | 0.0848 | 0.2192 | **0.0314** | **2.70x** |
-| epinions | 0.0088% | 75,888 | 23.283 | 1.7000 | 1.4346 | 1.8919 | **0.8746** | **1.64x** |
-| smallworld | 0.0100% | 100,000 | 32.262 | 1.3566 | 1.8311 | 1.9073 | **0.1986** | **6.83x** |
-| fb_new_sites | 0.0529% | 27,917 | 12.633 | 0.7946 | 0.7610 | 0.8739 | **0.2640** | **2.88x** |
-| fb_artist | 0.0642% | 50,515 | 28.725 | 1.0018 | 1.2292 | 1.4226 | **0.5086** | **1.97x** |
-| nd6k | 2.1288% | 18,000 | 65.670 | 1.3503 | 4.0131 | 0.5196 | **0.2388** | **2.18x** |
-| nd3k | 4.0490% | 9,000 | 30.875 | 1.2092 | 1.9388 | 0.3639 | **0.2223** | **1.64x** |
-| congress | 5.8899% | 475 | 0.221 | 0.1510 | 0.1492 | 0.1433 | **0.0439** | **3.26x** |
+| amazon | 0.0006% | 548,552 | 424.070 | 7.4649 | 8.0789 | 22.4658 | **5.2474** | **1.42x** |
+| ASIC_100ks | 0.0059% | 99,190 | 2.268 | 0.0997 | 0.0989 | 0.2357 | **0.0314** | **3.14x** |
+| epinions | 0.0088% | 75,888 | 22.377 | 1.7618 | 0.9513 | 1.6245 | **0.8765** | **1.09x** |
+| smallworld | 0.0100% | 100,000 | 31.444 | 0.7861 | 1.2014 | 1.9889 | **0.2283** | **3.44x** |
+| fb_new_sites | 0.0529% | 27,917 | 12.174 | 0.6937 | 0.8065 | 0.9012 | **0.2783** | **2.49x** |
+| fb_artist | 0.0642% | 50,515 | 27.362 | 1.0621 | 1.3130 | 1.2252 | **0.5304** | **2.00x** |
+| nd6k | 2.1288% | 18,000 | 63.376 | 1.3622 | 4.0860 | 0.5226 | **0.2457** | **2.13x** |
+| nd3k | 4.0490% | 9,000 | 29.810 | 1.2225 | 1.9469 | 0.3722 | **0.2272** | **1.64x** |
+| congress | 5.8899% | 475 | 0.209 | 0.1489 | 0.1403 | 0.1418 | **0.0469** | **2.99x** |
 
-**1.64x – 6.83x faster than the best CUDA-core kernel** on every graph, and **26x – 275x faster than the sequential CPU implementation**.
+**1.09x – 3.44x faster than the best CUDA-core kernel** on every graph, and **26x – 258x faster than the sequential CPU implementation** (congress excluded, as its CPU time is too short to compare).
 
-Note that the *best* CUDA-core kernel differs by graph — `scCSC` on smallworld and fb_artist, `scCOOC` on ASIC_100ks / fb_new_sites / epinions, `vcCSC` on congress / nd3k / nd6k. `tcTF32` beats all three regardless of which one happens to win.
+Note that the *best* CUDA-core kernel differs by graph — `scCSC` on smallworld, fb_new_sites, fb_artist and amazon, `scCOOC` on ASIC_100ks, epinions and congress, `vcCSC` on nd3k and nd6k. `tcTF32` beats all three regardless of which one happens to win.
 
-**The speedup does not correlate with density.** The largest gain in the table (6.83x) belongs to `smallworld`, one of the sparsest graphs; the densest real graph gives 1.64x. After condensed blocking, tile occupancy is a property of the layout, not of the graph.
+**The speedup does not correlate with density.** The largest gain (3.44x) belongs to `smallworld`, one of the sparsest graphs, because rows in the same 16-row window share many neighbours. The smallest gains are on `epinions` (1.09x), whose skewed degrees already suit the edge-parallel `scCOOC`, and on `amazon` (1.42x), whose BFS depth of 38 makes `tcTF32` run a full SpMM at every level while `scCSC` skips visited vertices.
+
+GPU timings vary from run to run. In repeated runs the CUDA-core kernels varied by up to 10–20%, while `tcTF32` stayed within a few percent, so the speedups above move by a similar amount.
 
 *(Four toy graphs in the suite — 9 to 23 nodes — are omitted above. They are too small for the GPU to do meaningful work and their timings are dominated by kernel-launch overhead.)*
 
@@ -55,12 +58,12 @@ Note that the *best* CUDA-core kernel differs by graph — `scCSC` on smallworld
 Every BC score is checked node by node against the sequential CPU implementation:
 
 ```
-48 / 48 tests                    ✅ PERFECT MATCH
-1,524,156 node comparisons       0 mismatches
+52 / 52 tests                    ✅ PERFECT MATCH (1e-4 relative tolerance)
+3,718,364 node comparisons       0 mismatches
 compute-sanitizer memcheck       0 errors
 compute-sanitizer racecheck      0 hazards
 compute-sanitizer synccheck      0 errors
-independent networkx cross-check 1.6e-07 agreement
+independent networkx cross-check within 7.7e-06 relative error
 ```
 
 ---
@@ -96,10 +99,10 @@ F  ←  A' F                 F is n × 16  →   exactly the m16n16k8 tf32 WMMA 
 
 Two problems had to be solved:
 
-1. **Exactness.** Shortest-path counts are integers reaching 4.13 × 10¹⁰. fp16 fails twice over (exact integers stop at 2,048; `sigma` would overflow its 65,504 maximum). TF32 has fp32's range but only an 11-bit mantissa, so each value is split three ways — 33 mantissa bits, more than fp32's own 24 — at a measured cost of about 20%.
+1. **Exactness.** Shortest-path counts are integers that grow fast: 24,973 on `fb_artist`, and past fp16's 65,504 maximum on `nd6k` and `amazon`. fp16 fails twice over (exact integers stop at 2,048; `sigma` would overflow its maximum). TF32 has fp32's range but only an 11-bit mantissa, so each value is split three ways — 33 mantissa bits, more than fp32's own 24 — at a measured cost of about 20%.
 2. **Sparsity.** Solved by the condensed blocking described above.
 
-**The design never stores a dense matrix.** The graph is held in a sparse condensed format — O(nz), 2.3–8.2 MB for these graphs — and a 16×16 dense window is assembled in *shared memory* for each chunk, multiplied, and discarded immediately, around 3.25 million times per run. A dense `n × n` matrix would be 37 GB for `smallworld` and would not even fit on the GPU.
+**The design never stores a dense matrix.** The graph is held in a sparse condensed format — O(nz), only a few MB (8.16 MB for `fb_artist`) — and a 16×16 dense window is assembled in *shared memory* for each chunk, multiplied, and discarded immediately, around 3.25 million times per run. A dense `n × n` matrix would be 37 GB for `smallworld` and would not even fit on the GPU.
 
 📖 **Full walkthrough:** [`TurboBC/TENSOR_CORE_DESIGN.md`](TurboBC/TENSOR_CORE_DESIGN.md) — the three stages and their lifetimes, exact memory accounting, scaling limits, precision analysis, and commands to reproduce every figure.
 
@@ -136,14 +139,14 @@ If your CUDA lives somewhere other than `/usr/local/cuda`, or your GPU is not sm
 
 ## Run
 
-### Full benchmark suite — 48 tests with verification (~7 min)
+### Full benchmark suite — 52 tests with verification
 
 ```bash
 cd TurboBC
-./run_all_experiments.sh 2>&1 | tee ~/turbobc_results_$(date +%Y%m%d_%H%M).txt
+./run_all_experiments.sh 2>&1 | tee ../results/turbobc_results_$(date +%Y%m%d_%H%M).txt
 ```
 
-This one command runs all 12 graphs × 4 GPU algorithms, each alongside a CPU baseline, cross-checks every BC score node by node, and prints the benchmark table. Every figure in that table is computed from the log at print time — nothing is hardcoded.
+This one command runs all 13 graphs × 4 GPU algorithms, each alongside a CPU baseline, cross-checks every BC score node by node, and prints the benchmark table. Every figure in that table is computed from the log at print time — nothing is hardcoded.
 
 ### Re-print the summary without re-running
 
@@ -188,10 +191,11 @@ Three splits give 33 mantissa bits, which is a *proof* of exactness. Two give 22
 
 ## Datasets
 
-12 graphs in `graphData/`, spanning four orders of magnitude of density:
+13 graphs, spanning four orders of magnitude of density. All are in `graphData/` except `amazon`, which is 25 MB and is rebuilt with the commands in [`graphData/LARGE_GRAPHS.md`](graphData/LARGE_GRAPHS.md):
 
 | Graph | Nodes | Edges | Density | Source |
 |:---|---:|---:|---:|:---|
+| amazon | 548,552 | 1,851,744 | 0.0006% | SNAP `com-Amazon` |
 | ASIC_100ks | 99,190 | 578,890 | 0.0059% | SuiteSparse (circuit) |
 | epinions | 75,888 | 508,837 | 0.0088% | SNAP `soc-Epinions1` |
 | smallworld | 100,000 | 999,996 | 0.0100% | SuiteSparse |
@@ -204,17 +208,20 @@ Three splits give 33 mantissa bits, which is a *proof* of exactness. Two give 22
 
 **Density** is `nz / N² × 100` — what fraction of all possible connections actually exists. Lower means sparser: ASIC_100ks has about **1 filled cell in every 17,000**.
 
-Two converters are included for adding more graphs:
+Three converters are included for adding more graphs:
 
 ```bash
 # SNAP datasets (.txt, .txt.gz or .csv); --undirected emits both (u,v) and (v,u)
 python3 snap_to_mtx.py  input.txt.gz  output.mtx  [--undirected]
 
+# SuiteSparse symmetric matrices (lower triangle stored); used for nd3k and nd6k
+python3 suitesparse_sym_to_mtx.py  input.mtx  output.mtx
+
 # plain edge lists; --unweighted drops the value column
 python3 edgelist_to_mtx.py  input.edgelist  output.mtx  [--unweighted] [--symmetrize]
 ```
 
-Both emit 1-based, column-grouped Matrix Market files, which is what the reader in `bcugcsccooc_main.c` expects. Graphs converted with `--undirected` already contain both directions, so run them with `--ug 0`.
+All three emit 1-based, column-grouped Matrix Market files, which is what the reader in `bcugcsccooc_main.c` expects. Graphs converted with `--undirected` already contain both directions, so run them with `--ug 0`.
 
 More matrices can be taken from the [SuiteSparse Matrix Collection](https://sparse.tamu.edu) or [SNAP](https://snap.stanford.edu/data/).
 
@@ -224,6 +231,8 @@ More matrices can be taken from the [SuiteSparse Matrix Collection](https://spar
 
 ```
 graphData/                       12 graphs in Matrix Market format
+└── LARGE_GRAPHS.md              ★ how to rebuild amazon.mtx (25 MB, not committed)
+results/                         ★ output of the final benchmark run
 TurboBC/
 ├── bcgputc.cu                   ★ NEW — the tensor core implementation
 ├── bcgpugcsc_sc.cu              original — scCSC
@@ -231,12 +240,14 @@ TurboBC/
 ├── bcgpugcooc_sc.cu             original — scCOOC
 ├── bcug_seq.c                   original — sequential CPU BC (ground truth)
 ├── bcugcsccooc_main.c           entry point
+├── legacy/                      ★ first tensor-core kernel (fixed 16x16 grid), kept for comparison
 ├── TENSOR_CORE_DESIGN.md        ★ full design walkthrough
 ├── REPRODUCTION_REPORT.md       ★ reproduction study + results
-├── run_all_experiments.sh       ★ 48-test runner
+├── run_all_experiments.sh       ★ 52-test runner
 ├── cross_check_scores.py        ★ node-by-node CPU vs GPU verification
 ├── generate_summary_report.py   ★ benchmark and speedup report
 ├── snap_to_mtx.py               ★ SNAP → .mtx converter
+├── suitesparse_sym_to_mtx.py    ★ SuiteSparse symmetric → .mtx converter
 └── edgelist_to_mtx.py           ★ edge list → .mtx converter
 ```
 
@@ -249,6 +260,8 @@ TurboBC/
 **A pre-existing issue in the original code.** On genuinely directed graphs, the delta phase applies `A'` (predecessors) where the Brandes algorithm calls for `A` (successors). The CPU and all four GPU implementations share this behaviour, so they agree with each other but differ from `networkx`. Symmetric graphs are unaffected (`A = A'`), and no timing comparison is affected, since all five implementations compute the same quantity. This was not introduced by the tensor-core work; it is reported, not fixed.
 
 **Tensor-core ablation not yet run.** The speedup comes from three sources — 16-root batching, the condensed layout, and the tensor cores themselves — and the third has not been isolated. The decisive experiment is the same layout and the same batching with an FMA loop on CUDA cores in place of the MMA. The expectation is that tensor cores do matter, because the condensed layout deliberately performs ~16x redundant arithmetic in exchange for coalesced memory access, and that trade only pays when arithmetic is nearly free. But that is a prediction, not a measurement.
+
+**32-bit path counts in the original kernels.** The CPU reference, `scCSC` and `vcCSC` accumulate shortest-path counts in `int`. On graphs with very many shortest paths (nd24k, roadNet_PA, youtube) these counts pass 2^31 and overflow in the same way in all three, so they agree with each other on wrong values. Those graphs were therefore removed from the suite; see the int32 overflow section of `REPRODUCTION_REPORT.md`.
 
 **32-bit edge count.** `nz` is passed to the GPU entry points as `int`, capping all four algorithms at 2.15 billion edges. Widening it to `size_t` is a change to five signatures and would leave memory as the only limit. Not needed at the sizes studied here.
 
